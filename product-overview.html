@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Ghostwriter Agent — Product Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Manrope:wght@200..800&family=JetBrains+Mono:wght@300..600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0a09;
+  --surface: #1c1917;
+  --surface-2: #292524;
+  --border: #44403c;
+  --border-light: #57534e;
+  --gold: #d4a574;
+  --gold-dim: #a8855c;
+  --sage: #87a878;
+  --sage-dim: #6b8a5e;
+  --coral: #e07856;
+  --coral-dim: #b8624a;
+  --blue: #6b8aad;
+  --blue-dim: #5570a0;
+  --text: #f5f5f4;
+  --text-2: #a8a29e;
+  --text-3: #78716c;
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* Nav */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(12, 10, 9, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+nav .brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--gold);
+  letter-spacing: -0.02em;
+}
+nav .links {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.8rem;
+}
+nav .links a {
+  color: var(--text-2);
+  text-decoration: none;
+  transition: color 0.2s;
+  font-weight: 500;
+}
+nav .links a:hover { color: var(--gold); }
+
+/* Sections */
+section {
+  padding: 6rem 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Hero */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 8rem;
+}
+.hero-glow {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(212,165,116,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.2s forwards;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.5rem, 7vw, 5.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.4s forwards;
+}
+.hero h1 em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--gold);
+}
+.hero p {
+  font-size: 1.25rem;
+  color: var(--text-2);
+  max-width: 580px;
+  line-height: 1.5;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.6s forwards;
+}
+.hero-meta {
+  display: flex;
+  gap: 2rem;
+  margin-top: 3rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.8s forwards;
+}
+.hero-meta-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+.hero-meta-item strong {
+  color: var(--text);
+  display: block;
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+/* Section headers */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+  line-height: 1.15;
+}
+.section-sub {
+  color: var(--text-2);
+  font-size: 1rem;
+  max-width: 600px;
+  margin-bottom: 3rem;
+}
+
+/* 3-step overview */
+.flow-overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  position: relative;
+}
+.flow-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2.5rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.flow-step:hover {
+  background: var(--surface-2);
+  border-color: var(--gold-dim);
+  transform: translateY(-4px);
+}
+.flow-step::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s;
+}
+.flow-step:hover::after { transform: scaleX(1); }
+.flow-step-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-3);
+  margin-bottom: 1rem;
+}
+.flow-step-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.flow-step h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.flow-step p {
+  color: var(--text-2);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.flow-arrow {
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  transform: translateY(-50%);
+  z-index: 2;
+  color: var(--border-light);
+}
+
+/* Onboarding stepper */
+.stepper {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+  position: relative;
+}
+.step-tab {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-right: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.step-tab:last-child { border-right: 1px solid var(--border); }
+.step-tab.active {
+  background: var(--surface-2);
+  border-color: var(--gold-dim);
+  z-index: 2;
+}
+.step-tab-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-2);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.step-tab.active .step-tab-num {
+  background: var(--gold);
+  color: var(--bg);
+}
+.step-tab-label {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.step-tab.active .step-tab-label { color: var(--text); }
+
+.step-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2.5rem;
+  min-height: 320px;
+  display: none;
+}
+.step-content.active { display: block; animation: fadeIn 0.3s; }
+
+.step-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+.step-detail-left h4 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+.step-detail-left p {
+  color: var(--text-2);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+.step-detail-left .llm-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--blue);
+  background: rgba(107,138,173,0.1);
+  border: 1px solid rgba(107,138,173,0.2);
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}
+.step-detail-right {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  border-radius: 4px;
+}
+
+/* Form field mock */
+.field-mock {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.field-mock-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.field-mock-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-3);
+  width: 90px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.field-mock-input {
+  flex: 1;
+  height: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+.field-mock-input.filled {
+  color: var(--text);
+  border-color: var(--gold-dim);
+}
+
+/* Paste mock */
+.paste-mock {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-3);
+  line-height: 1.6;
+  min-height: 80px;
+  margin-bottom: 0.75rem;
+}
+.paste-arrow {
+  text-align: center;
+  color: var(--blue);
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+}
+.output-mock {
+  background: rgba(107,138,173,0.08);
+  border: 1px solid rgba(107,138,173,0.2);
+  border-radius: 3px;
+  padding: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.output-mock-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--blue);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.1em;
+}
+
+/* Topic tags */
+.topic-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.topic-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 0.4rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-2);
+}
+.topic-tag.active {
+  background: rgba(212,165,116,0.1);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+/* Style cards */
+.style-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.style-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.style-card:hover {
+  border-color: var(--border-light);
+}
+.style-card.selected {
+  border-color: var(--gold);
+  background: rgba(212,165,116,0.05);
+}
+.style-card.selected::before {
+  content: '✓';
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  color: var(--gold);
+  font-size: 0.85rem;
+}
+.style-card-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+}
+.style-card-text {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  line-height: 1.5;
+  font-family: var(--font-display);
+  font-style: italic;
+}
+.style-card-text.muted { opacity: 0.4; }
+
+.own-writing-box {
+  margin-top: 1rem;
+  background: var(--surface);
+  border: 1px dashed var(--border-light);
+  border-radius: 4px;
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-3);
+  text-align: center;
+}
+.own-writing-box.active {
+  border-color: var(--sage-dim);
+  border-style: solid;
+  background: rgba(135,168,120,0.05);
+  color: var(--sage);
+}
+
+.weightage-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 0.75rem;
+}
+.weightage-user { background: var(--sage); }
+.weightage-style { background: var(--gold); }
+.weightage-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-3);
+  margin-top: 0.4rem;
+}
+
+/* Generate pipeline */
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.pipeline-row {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+}
+.pipeline-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+}
+.pipeline-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s;
+}
+.pipeline-input:hover {
+  border-color: var(--border-light);
+  background: var(--surface-2);
+}
+.pipeline-input-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.pipeline-input-content {
+  flex: 1;
+}
+.pipeline-input-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.2rem;
+}
+.pipeline-input-value {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.pipeline-core {
+  width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  flex-shrink: 0;
+}
+.pipeline-core-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  border: 1px solid var(--gold);
+  animation: pulse 2s infinite;
+  pointer-events: none;
+}
+.pipeline-core-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.pipeline-core-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.pipeline-core-sub {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  margin-top: 0.3rem;
+}
+
+.pipeline-output {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.post-structure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.post-part {
+  padding: 0.6rem 0.75rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-family: var(--font-display);
+}
+.post-hook {
+  background: rgba(212,165,116,0.08);
+  border-left: 3px solid var(--gold);
+  color: var(--gold);
+  font-style: italic;
+}
+.post-body {
+  background: var(--surface-2);
+  border-left: 3px solid var(--border-light);
+  color: var(--text-2);
+}
+.post-cta {
+  background: rgba(135,168,120,0.08);
+  border-left: 3px solid var(--sage);
+  color: var(--sage);
+}
+.post-part-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-3);
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Surprise me */
+.surprise-me {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.surprise-btn-mock {
+  background: var(--surface-2);
+  border: 1px solid var(--coral-dim);
+  color: var(--coral);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.surprise-btn-mock:hover {
+  background: rgba(224,120,86,0.1);
+}
+.surprise-desc {
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+/* Polish section */
+.polish-paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.polish-path {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+.polish-path:hover { transform: translateY(-2px); }
+.polish-path.edit { border-top: 3px solid var(--blue); }
+.polish-path.regen { border-top: 3px solid var(--gold); }
+.polish-path.reject { border-top: 3px solid var(--coral); }
+.polish-path-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.polish-path h4 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.polish-path p {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.polish-path .badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  margin-top: 0.75rem;
+  display: inline-block;
+}
+.polish-path.edit .badge { background: rgba(107,138,173,0.1); color: var(--blue); }
+.polish-path.regen .badge { background: rgba(212,165,116,0.1); color: var(--gold); }
+.polish-path.reject .badge { background: rgba(224,120,86,0.1); color: var(--coral); }
+
+/* Learning loop */
+.learning-loop {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+}
+.loop-visual {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  flex-shrink: 0;
+}
+.loop-svg {
+  width: 100%;
+  height: 100%;
+}
+.loop-node {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  z-index: 2;
+  transition: all 0.3s;
+}
+.loop-node.active {
+  border-color: var(--gold);
+  background: rgba(212,165,116,0.1);
+  box-shadow: 0 0 20px rgba(212,165,116,0.2);
+}
+.loop-node-1 { top: 0; left: 50%; transform: translateX(-50%); }
+.loop-node-2 { top: 50%; right: 0; transform: translateY(-50%); }
+.loop-node-3 { bottom: 0; left: 50%; transform: translateX(-50%); }
+.loop-node-4 { top: 50%; left: 0; transform: translateY(-50%); }
+.loop-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.loop-explanation {
+  flex: 1;
+}
+.loop-explanation h4 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+.loop-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.loop-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-2);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+.loop-step-text {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.loop-step-text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Data model */
+.data-model {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+.entity-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.entity-card:hover {
+  border-color: var(--border-light);
+}
+.entity-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.entity-header-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+.entity-card:nth-child(1) .entity-header-icon { background: rgba(212,165,116,0.1); }
+.entity-card:nth-child(2) .entity-header-icon { background: rgba(135,168,120,0.1); }
+.entity-card:nth-child(3) .entity-header-icon { background: rgba(107,138,173,0.1); }
+.entity-card:nth-child(4) .entity-header-icon { background: rgba(224,120,86,0.1); }
+.entity-header-name {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text);
+  font-weight: 500;
+}
+.entity-header-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-3);
+  margin-left: auto;
+}
+.entity-fields {
+  padding: 0.5rem 0;
+}
+.entity-field {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1.5rem;
+  gap: 0.75rem;
+  transition: background 0.15s;
+}
+.entity-field:hover { background: var(--surface-2); }
+.entity-field-name {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text);
+  width: 140px;
+}
+.entity-field-type {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-3);
+}
+.entity-field-key {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 2px;
+  margin-left: auto;
+}
+.entity-field-key.pk { background: rgba(212,165,116,0.15); color: var(--gold); }
+.entity-field-key.fk { background: rgba(107,138,173,0.15); color: var(--blue); }
+.entity-field-key.llm { background: rgba(135,168,120,0.15); color: var(--sage); }
+.entity-field-key.auto { background: rgba(120,113,108,0.15); color: var(--text-3); }
+
+/* LLM Pipeline */
+.llm-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.llm-call {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  transition: all 0.2s;
+}
+.llm-call:last-child { border-bottom: 1px solid var(--border); }
+.llm-call:hover { background: var(--surface); }
+.llm-call-id {
+  padding: 1.25rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--gold);
+  text-align: center;
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.llm-call-when {
+  padding: 1.25rem 1rem;
+  border-right: 1px solid var(--border);
+}
+.llm-call-when-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.3rem;
+}
+.llm-call-when-value {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+.llm-call-io {
+  padding: 1.25rem 1rem;
+  border-right: 1px solid var(--border);
+}
+.llm-call-io-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.3rem;
+}
+.llm-call-io-value {
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+.llm-call-io-value .arrow { color: var(--gold); margin: 0 0.3rem; }
+.llm-call-constraint {
+  padding: 1.25rem 1rem;
+  display: flex;
+  align-items: center;
+}
+.llm-call-constraint-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 3px;
+  background: rgba(135,168,120,0.1);
+  color: var(--sage);
+  border: 1px solid rgba(135,168,120,0.2);
+}
+.llm-call-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+}
+.llm-call-header > div {
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-right: 1px solid var(--border);
+}
+.llm-call-header > div:last-child { border-right: none; }
+
+/* Post repository mock */
+.repo-mock {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.repo-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.repo-count {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-3);
+  margin-left: auto;
+}
+.repo-item {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: background 0.15s;
+}
+.repo-item:last-child { border-bottom: none; }
+.repo-item:hover { background: var(--surface-2); }
+.repo-item-topic {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--gold);
+  width: 120px;
+  flex-shrink: 0;
+}
+.repo-item-preview {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.repo-item-date {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.repo-item-copy {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.repo-item-copy:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+/* Constraints */
+.constraints {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.constraint-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+}
+.constraint-num {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--gold-dim);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.constraint-text {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.constraint-text strong { color: var(--text); }
+
+/* Footer */
+footer {
+  padding: 3rem 2rem;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  margin-top: 4rem;
+}
+footer p {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+}
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.05); }
+}
+@keyframes dash {
+  to { stroke-dashoffset: -20; }
+}
+@keyframes rotateLoop {
+  to { transform: rotate(360deg); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s, transform 0.6s;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  nav .links { display: none; }
+  section { padding: 4rem 1.25rem; }
+  .flow-overview { grid-template-columns: 1fr; }
+  .flow-arrow { display: none; }
+  .step-detail { grid-template-columns: 1fr; }
+  .style-cards { grid-template-columns: 1fr; }
+  .pipeline-row { flex-direction: column; }
+  .pipeline-core { width: 100%; }
+  .polish-paths { grid-template-columns: 1fr; }
+  .data-model { grid-template-columns: 1fr; }
+  .constraints { grid-template-columns: 1fr; }
+  .learning-loop { flex-direction: column; padding: 2rem; }
+  .llm-call, .llm-call-header { grid-template-columns: 60px 1fr; }
+  .llm-call-io, .llm-call-constraint { display: none; }
+  .llm-call-header > div:nth-child(3),
+  .llm-call-header > div:nth-child(4) { display: none; }
+  .stepper { flex-wrap: wrap; }
+  .step-tab { flex: 1 1 45%; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">AI Ghostwriter Agent</div>
+  <div class="links">
+    <a href="#flow">Flow</a>
+    <a href="#onboarding">Onboarding</a>
+    <a href="#generate">Generate</a>
+    <a href="#polish">Polish</a>
+    <a href="#data">Data</a>
+    <a href="#llm">LLM Calls</a>
+    <a href="#loop">Learning</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-eyebrow">Product Overview — MVP</div>
+  <h1>Learns how you write.<br>Generates posts that <em>sound like you.</em></h1>
+  <p>An AI ghostwriter that builds a personalized knowledge bank from your background, writing style, and topics, then generates LinkedIn posts requiring minimal edits before publishing.</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">STACK<strong>Next.js + Convex</strong></div>
+    <div class="hero-meta-item">LLM CALLS<strong>5 total</strong></div>
+    <div class="hero-meta-item">SCREENS<strong>2 total</strong></div>
+    <div class="hero-meta-item">BUILD SESSIONS<strong>3 groups</strong></div>
+  </div>
+</section>
+
+<!-- 3-STEP FLOW -->
+<section id="flow" class="reveal">
+  <div class="section-label">The Product</div>
+  <h2 class="section-title">Three steps. That's the whole product.</h2>
+  <p class="section-sub">Everything in the system serves one of these three moments. Click a step to jump to its detail.</p>
+
+  <div class="flow-overview">
+    <div class="flow-step" onclick="document.getElementById('onboarding').scrollIntoView({behavior:'smooth'})">
+      <div class="flow-step-num">STEP 01</div>
+      <div class="flow-step-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d4a574" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>
+      </div>
+      <h3>Onboarding</h3>
+      <p>3 inputs, one LinkedIn paste, topic tags, and an interactive style picker. The system builds a complete profile in under 2 minutes.</p>
+      <svg class="flow-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+    <div class="flow-step" onclick="document.getElementById('generate').scrollIntoView({behavior:'smooth'})">
+      <div class="flow-step-num">STEP 02</div>
+      <div class="flow-step-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d4a574" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <h3>Generate</h3>
+      <p>Enter a topic and your take. Or hit "Surprise Me." One LLM call produces a LinkedIn post in your style with hook, body, and CTA.</p>
+      <svg class="flow-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+    <div class="flow-step" onclick="document.getElementById('polish').scrollIntoView({behavior:'smooth'})">
+      <div class="flow-step-num">STEP 03</div>
+      <div class="flow-step-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d4a574" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <h3>Polish & Publish</h3>
+      <p>Edit, regenerate, or reject. On finalize, the system learns from your edits and updates your style profile. Copy and paste to LinkedIn.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ONBOARDING -->
+<section id="onboarding" class="reveal">
+  <div class="section-label">Step 01 — Onboarding</div>
+  <h2 class="section-title">Profile + Style Learning</h2>
+  <p class="section-sub">Four sub-steps. Low friction. The system infers most data, the user just picks and pastes. Click each tab to see what happens.</p>
+
+  <div class="stepper">
+    <div class="step-tab active" onclick="switchStep(0)">
+      <div class="step-tab-num">1</div>
+      <div class="step-tab-label">Quick Profile</div>
+    </div>
+    <div class="step-tab" onclick="switchStep(1)">
+      <div class="step-tab-num">2</div>
+      <div class="step-tab-label">LinkedIn Paste</div>
+    </div>
+    <div class="step-tab" onclick="switchStep(2)">
+      <div class="step-tab-num">3</div>
+      <div class="step-tab-label">Topics</div>
+    </div>
+    <div class="step-tab" onclick="switchStep(3)">
+      <div class="step-tab-num">4</div>
+      <div class="step-tab-label">Style Selection</div>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step-content active" id="step-0">
+    <div class="step-detail">
+      <div class="step-detail-left">
+        <h4>Three fields. That's it.</h4>
+        <p>Name, role, organization. No resume forms, no achievement lists, no dropdowns. Everything else is inferred later. This step creates the user record in Convex.</p>
+        <div class="llm-tag">
+          <span>NO LLM CALL</span> — Pure data entry → <code style="color:var(--gold)">createUser</code> mutation
+        </div>
+      </div>
+      <div class="step-detail-right">
+        <div class="field-mock">
+          <div class="field-mock-row">
+            <div class="field-mock-label">Name</div>
+            <div class="field-mock-input filled">Aaryav B.</div>
+          </div>
+          <div class="field-mock-row">
+            <div class="field-mock-label">Role</div>
+            <div class="field-mock-input filled">Founder</div>
+          </div>
+          <div class="field-mock-row">
+            <div class="field-mock-label">Org</div>
+            <div class="field-mock-input filled">Beacon House</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-content" id="step-1">
+    <div class="step-detail">
+      <div class="step-detail-left">
+        <h4>Paste your LinkedIn. Get a summary.</h4>
+        <p>User copies their LinkedIn About or Experience section and pastes it into one text box. One LLM call extracts industry, background, achievements, and context into a concise 150-word summary.</p>
+        <div class="llm-tag">
+          <span>LLM CALL 1</span> — <code style="color:var(--gold)">inferProfessionalBackground</code> action
+        </div>
+      </div>
+      <div class="step-detail-right">
+        <div class="output-mock-badge">USER PASTES</div>
+        <div class="paste-mock">Founder & CEO at Beacon House. Previously VP at TechCorp. 10 years in EdTech. Built and sold 2 startups. Speaker at Web Summit...</div>
+        <div class="paste-arrow">↓</div>
+        <div class="output-mock-badge">LLM OUTPUT (max 150 words)</div>
+        <div class="output-mock">EdTech founder with 10+ years experience. Current CEO of Beacon House. Ex-VP at TechCorp. Two prior exits. Conference speaker. Focus on education innovation and startup building.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-content" id="step-2">
+    <div class="step-detail">
+      <div class="step-detail-left">
+        <h4>Pick 3-4 topics.</h4>
+        <p>Simple text inputs or tags. What do you usually write or think about? These become context for every future generation call and the seed for the style samples in the next step.</p>
+        <div class="llm-tag">
+          <span>NO LLM CALL</span> — Pure data entry → <code style="color:var(--gold)">updateTopics</code> mutation
+        </div>
+      </div>
+      <div class="step-detail-right">
+        <div class="topic-tags">
+          <div class="topic-tag active">Startup building</div>
+          <div class="topic-tag active">EdTech</div>
+          <div class="topic-tag active">Fundraising</div>
+          <div class="topic-tag active">Lessons learned</div>
+          <div class="topic-tag">+ Add topic</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step-content" id="step-3">
+    <div class="step-detail">
+      <div class="step-detail-left">
+        <h4>See 5 styles. Pick what feels like you.</h4>
+        <p>The system generates 5 one-paragraph posts on your first topic, each in a different style. Pick up to 2 that resonate. Or write your own version and pick just 1.</p>
+        <div class="llm-tag" style="margin-bottom: 0.5rem">
+          <span>LLM CALL 2</span> — <code style="color:var(--gold)">generateStyleSamples</code> (5 samples, not stored)
+        </div>
+        <div class="llm-tag">
+          <span>LLM CALL 3</span> — <code style="color:var(--gold)">synthesizeStyleProfile</code> (creates profile, max 200 words)
+        </div>
+        <div style="margin-top: 1.5rem">
+          <div style="font-family:var(--font-mono);font-size:0.65rem;color:var(--text-3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Weightage (if user writes own sample)</div>
+          <div class="weightage-bar">
+            <div class="weightage-user" style="width:75%"></div>
+            <div class="weightage-style" style="width:25%"></div>
+          </div>
+          <div class="weightage-label">
+            <span style="color:var(--sage)">75% User writing</span>
+            <span style="color:var(--gold)">25% Style pick</span>
+          </div>
+        </div>
+      </div>
+      <div class="step-detail-right">
+        <div class="output-mock-badge" style="margin-bottom:0.75rem">5 SAMPLES ON "STARTUP BUILDING"</div>
+        <div class="style-cards">
+          <div class="style-card">
+            <div class="style-card-label">Contrarian</div>
+            <div class="style-card-text">"Everyone says hustle 24/7. The best founders I know sleep 8 hours and think deeply..."</div>
+          </div>
+          <div class="style-card selected">
+            <div class="style-card-label">Humble</div>
+            <div class="style-card-text">"I got everything wrong in my first startup. Here's what I wish someone had told me..."</div>
+          </div>
+          <div class="style-card">
+            <div class="style-card-label">Flashy</div>
+            <div class="style-card-text">"Just hit $10M ARR. 18 months ago we were 3 people in a garage. Here's the play..."</div>
+          </div>
+          <div class="style-card">
+            <div class="style-card-label">Preachy</div>
+            <div class="style-card-text">"Stop optimizing for vanity metrics. Focus on one number that actually matters..."</div>
+          </div>
+          <div class="style-card selected">
+            <div class="style-card-label">Conversational</div>
+            <div class="style-card-text">"Had coffee with a founder yesterday. He asked me one question that changed how I think..."</div>
+          </div>
+          <div class="style-card" style="border-style:dashed">
+            <div class="style-card-label" style="color:var(--text-3)">Optional</div>
+            <div class="style-card-text muted">Write your own version...</div>
+          </div>
+        </div>
+        <div class="own-writing-box">
+          ✎ Or write your own version (limits style picks to 1)
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GENERATE -->
+<section id="generate" class="reveal">
+  <div class="section-label">Step 02 — Generate</div>
+  <h2 class="section-title">Topic + Opinion → Post</h2>
+  <p class="section-sub">All stored knowledge bank artifacts flow into one LLM call. The output is a structured LinkedIn post.</p>
+
+  <div class="pipeline">
+    <div class="pipeline-row">
+      <div class="pipeline-inputs">
+        <div class="pipeline-input">
+          <div class="pipeline-input-icon" style="color:var(--gold)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div class="pipeline-input-content">
+            <div class="pipeline-input-label">User Input</div>
+            <div class="pipeline-input-value">Topic + opinion/take</div>
+          </div>
+        </div>
+        <div class="pipeline-input">
+          <div class="pipeline-input-icon" style="color:var(--blue)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="pipeline-input-content">
+            <div class="pipeline-input-label">User Profile</div>
+            <div class="pipeline-input-value">Name, role, org, professional background</div>
+          </div>
+        </div>
+        <div class="pipeline-input">
+          <div class="pipeline-input-icon" style="color:var(--sage)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          </div>
+          <div class="pipeline-input-content">
+            <div class="pipeline-input-label">Style Profile</div>
+            <div class="pipeline-input-value">200-word writing style (evolves over time)</div>
+          </div>
+        </div>
+        <div class="pipeline-input">
+          <div class="pipeline-input-icon" style="color:var(--text-3)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><path d="M7 7h.01"/></svg>
+          </div>
+          <div class="pipeline-input-content">
+            <div class="pipeline-input-label">Topics List</div>
+            <div class="pipeline-input-value">3-4 user-selected topics</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipeline-core">
+        <div class="pipeline-core-pulse"></div>
+        <div class="pipeline-core-icon">⚡</div>
+        <div class="pipeline-core-label">LLM Call 4</div>
+        <div class="pipeline-core-sub">generatePost</div>
+      </div>
+
+      <div class="pipeline-output">
+        <div class="output-mock-badge">OUTPUT — LinkedIn Post</div>
+        <div class="post-structure">
+          <div>
+            <div class="post-part-label">Hook</div>
+            <div class="post-hook">"I got everything wrong in my first startup. Here's what I wish someone told me..."</div>
+          </div>
+          <div>
+            <div class="post-part-label">Body</div>
+            <div class="post-body">Three years ago I was optimizing for the wrong things. Vanity metrics. Big team. Fancy office. None of it mattered. What actually moved the needle was talking to 5 users a day...</div>
+          </div>
+          <div>
+            <div class="post-part-label">CTA</div>
+            <div class="post-cta">What's the one thing you wish you knew earlier? ↓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="surprise-me">
+      <div class="surprise-btn-mock">🎲 Surprise Me</div>
+      <div class="surprise-desc">Picks a random topic from your list. No user input needed. Optionally picks a random angle (hot take, story, lesson, contrarian).</div>
+    </div>
+  </div>
+</section>
+
+<!-- POLISH -->
+<section id="polish" class="reveal">
+  <div class="section-label">Step 03 — Polish & Publish</div>
+  <h2 class="section-title">Three paths from a generated post</h2>
+  <p class="section-sub">The user reviews the post and chooses what to do next. Only "Edit → Finalize" triggers the learning loop.</p>
+
+  <div class="polish-paths">
+    <div class="polish-path edit">
+      <div class="polish-path-icon">✎</div>
+      <h4>Edit</h4>
+      <p>Inline editor. Fix what feels off. Then finalize to trigger the learning loop.</p>
+      <div class="badge">Triggers LLM Call 5</div>
+    </div>
+    <div class="polish-path regen">
+      <div class="polish-path-icon">↻</div>
+      <h4>Regenerate</h4>
+      <p>Same topic + inputs + an optional comment on what to adjust. Fresh draft replaces the old one.</p>
+      <div class="badge">LLM Call 4a</div>
+    </div>
+    <div class="polish-path reject">
+      <div class="polish-path-icon">✕</div>
+      <h4>Reject</h4>
+      <p>Completely off-track? Reject it. Saved to DB but no style profile update.</p>
+      <div class="badge">No LLM call</div>
+    </div>
+  </div>
+
+  <div class="repo-mock">
+    <div class="repo-header">
+      <span>📋 Post Repository</span>
+      <span class="repo-count">4 finalized</span>
+    </div>
+    <div class="repo-item">
+      <div class="repo-item-topic">Startup building</div>
+      <div class="repo-item-preview">I got everything wrong in my first startup. Here's what I wish someone told me...</div>
+      <div class="repo-item-date">Jun 26</div>
+      <div class="repo-item-copy">Copy</div>
+    </div>
+    <div class="repo-item">
+      <div class="repo-item-topic">EdTech</div>
+      <div class="repo-item-preview">The biggest mistake in EdTech is building for administrators, not students...</div>
+      <div class="repo-item-date">Jun 24</div>
+      <div class="repo-item-copy">Copy</div>
+    </div>
+    <div class="repo-item">
+      <div class="repo-item-topic">Fundraising</div>
+      <div class="repo-item-preview">Nobody talks about the 47 investors who said no before the one who said yes...</div>
+      <div class="repo-item-date">Jun 22</div>
+      <div class="repo-item-copy">Copy</div>
+    </div>
+    <div class="repo-item">
+      <div class="repo-item-topic">Lessons learned</div>
+      <div class="repo-item-preview">Hiring your first engineer is the most important decision you'll make as a founder...</div>
+      <div class="repo-item-date">Jun 20</div>
+      <div class="repo-item-copy">Copy</div>
+    </div>
+  </div>
+</section>
+
+<!-- LEARNING LOOP -->
+<section id="loop" class="reveal">
+  <div class="section-label">The Learning Loop</div>
+  <h2 class="section-title">Each finalized post makes the next one better</h2>
+  <p class="section-sub">The style profile is the only thing that evolves. No model fine-tuning, no training data. Just a concise 200-word document that gets tweaked on every finalize.</p>
+
+  <div class="learning-loop">
+    <div class="loop-visual">
+      <svg class="loop-svg" viewBox="0 0 240 240">
+        <circle cx="120" cy="120" r="90" fill="none" stroke="#44403c" stroke-width="1" stroke-dasharray="5 5"/>
+        <circle cx="120" cy="120" r="90" fill="none" stroke="#d4a574" stroke-width="1.5" stroke-dasharray="5 5" style="animation: dash 1s linear infinite"/>
+      </svg>
+      <div class="loop-node loop-node-1 active" id="loop-node-1">⚡</div>
+      <div class="loop-node loop-node-2" id="loop-node-2">✎</div>
+      <div class="loop-node loop-node-3" id="loop-node-3">✓</div>
+      <div class="loop-node loop-node-4" id="loop-node-4">↻</div>
+      <div class="loop-center">Style Profile<br>evolves</div>
+    </div>
+    <div class="loop-explanation">
+      <h4>How it works</h4>
+      <div class="loop-step">
+        <div class="loop-step-num">1</div>
+        <div class="loop-step-text"><strong>Generate</strong> — LLM produces a post using current style profile</div>
+      </div>
+      <div class="loop-step">
+        <div class="loop-step-num">2</div>
+        <div class="loop-step-text"><strong>Edit</strong> — User makes inline edits to the generated post</div>
+      </div>
+      <div class="loop-step">
+        <div class="loop-step-num">3</div>
+        <div class="loop-step-text"><strong>Finalize</strong> — System computes diff between original and final, calls LLM Call 5</div>
+      </div>
+      <div class="loop-step">
+        <div class="loop-step-num">4</div>
+        <div class="loop-step-text"><strong>Learn</strong> — Style profile updated (max 200 words, never longer than before). Next generation is slightly better.</div>
+      </div>
+      <div style="margin-top:1.5rem;padding:0.75rem 1rem;background:rgba(135,168,120,0.08);border:1px solid rgba(135,168,120,0.2);border-radius:4px;font-size:0.8rem;color:var(--sage)">
+        ✓ The agent gets better after 5-6 finalized posts. Keep reviewing and editing.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATA MODEL -->
+<section id="data" class="reveal">
+  <div class="section-label">Data Model</div>
+  <h2 class="section-title">Four Convex tables. All userId-keyed.</h2>
+  <p class="section-sub">Designed for multi-user from day one. MVP seeds one user. Post-MVP adds auth, same schema works unchanged.</p>
+
+  <div class="data-model">
+    <!-- users -->
+    <div class="entity-card">
+      <div class="entity-header">
+        <div class="entity-header-icon">👤</div>
+        <div class="entity-header-name">users</div>
+        <div class="entity-header-tag">The founder</div>
+      </div>
+      <div class="entity-fields">
+        <div class="entity-field"><div class="entity-field-name">_id</div><div class="entity-field-type">Id</div><div class="entity-field-key pk">PK</div></div>
+        <div class="entity-field"><div class="entity-field-name">name</div><div class="entity-field-type">string</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">role</div><div class="entity-field-type">string</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">organization</div><div class="entity-field-type">string</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">professionalBackground</div><div class="entity-field-type">string</div><div class="entity-field-key llm">LLM 1</div></div>
+        <div class="entity-field"><div class="entity-field-name">topics</div><div class="entity-field-type">string[]</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">createdAt</div><div class="entity-field-type">number</div><div class="entity-field-key auto">AUTO</div></div>
+      </div>
+    </div>
+
+    <!-- styleProfiles -->
+    <div class="entity-card">
+      <div class="entity-header">
+        <div class="entity-header-icon">✎</div>
+        <div class="entity-header-name">styleProfiles</div>
+        <div class="entity-header-tag">Evolves on finalize</div>
+      </div>
+      <div class="entity-fields">
+        <div class="entity-field"><div class="entity-field-name">_id</div><div class="entity-field-type">Id</div><div class="entity-field-key pk">PK</div></div>
+        <div class="entity-field"><div class="entity-field-name">userId</div><div class="entity-field-type">Id(users)</div><div class="entity-field-key fk">FK</div></div>
+        <div class="entity-field"><div class="entity-field-name">profileText</div><div class="entity-field-type">string</div><div class="entity-field-key llm">LLM 3+5</div></div>
+        <div class="entity-field"><div class="entity-field-name">userWritingSample</div><div class="entity-field-type">string?</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">selectedStyles</div><div class="entity-field-type">string[]</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">sampleWritingWeight</div><div class="entity-field-type">number</div><div class="entity-field-key auto">0.75/0</div></div>
+        <div class="entity-field"><div class="entity-field-name">updatedAt</div><div class="entity-field-type">number</div><div class="entity-field-key auto">AUTO</div></div>
+      </div>
+    </div>
+
+    <!-- posts -->
+    <div class="entity-card">
+      <div class="entity-header">
+        <div class="entity-header-icon">📝</div>
+        <div class="entity-header-name">posts</div>
+        <div class="entity-header-tag">draft / finalized / rejected</div>
+      </div>
+      <div class="entity-fields">
+        <div class="entity-field"><div class="entity-field-name">_id</div><div class="entity-field-type">Id</div><div class="entity-field-key pk">PK</div></div>
+        <div class="entity-field"><div class="entity-field-name">userId</div><div class="entity-field-type">Id(users)</div><div class="entity-field-key fk">FK</div></div>
+        <div class="entity-field"><div class="entity-field-name">topic</div><div class="entity-field-type">string</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">userInput</div><div class="entity-field-type">string?</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">mode</div><div class="entity-field-type">string</div><div class="entity-field-key auto">SYSTEM</div></div>
+        <div class="entity-field"><div class="entity-field-name">generatedContent</div><div class="entity-field-type">string</div><div class="entity-field-key llm">LLM 4</div></div>
+        <div class="entity-field"><div class="entity-field-name">regenerateNote</div><div class="entity-field-type">string?</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">finalContent</div><div class="entity-field-type">string?</div><div class="entity-field-key auto">EDIT</div></div>
+        <div class="entity-field"><div class="entity-field-name">status</div><div class="entity-field-type">string</div><div class="entity-field-key auto">SYSTEM</div></div>
+        <div class="entity-field"><div class="entity-field-name">editsDiff</div><div class="entity-field-type">string?</div><div class="entity-field-key llm">LLM 5</div></div>
+        <div class="entity-field"><div class="entity-field-name">createdAt</div><div class="entity-field-type">number</div><div class="entity-field-key auto">AUTO</div></div>
+        <div class="entity-field"><div class="entity-field-name">finalizedAt</div><div class="entity-field-type">number?</div><div class="entity-field-key auto">AUTO</div></div>
+      </div>
+    </div>
+
+    <!-- backgroundInputs -->
+    <div class="entity-card">
+      <div class="entity-header">
+        <div class="entity-header-icon">📋</div>
+        <div class="entity-header-name">backgroundInputs</div>
+        <div class="entity-header-tag">Raw paste storage</div>
+      </div>
+      <div class="entity-fields">
+        <div class="entity-field"><div class="entity-field-name">_id</div><div class="entity-field-type">Id</div><div class="entity-field-key pk">PK</div></div>
+        <div class="entity-field"><div class="entity-field-name">userId</div><div class="entity-field-type">Id(users)</div><div class="entity-field-key fk">FK</div></div>
+        <div class="entity-field"><div class="entity-field-name">linkedinPaste</div><div class="entity-field-type">string</div><div class="entity-field-key auto">INPUT</div></div>
+        <div class="entity-field"><div class="entity-field-name">createdAt</div><div class="entity-field-type">number</div><div class="entity-field-key auto">AUTO</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LLM CALLS -->
+<section id="llm" class="reveal">
+  <div class="section-label">LLM Call Inventory</div>
+  <h2 class="section-title">Five calls. One per action.</h2>
+  <p class="section-sub">No multi-step chains, no agentic loops. Each call is a single LLM interaction with strict output constraints.</p>
+
+  <div class="llm-call-header">
+    <div>Call</div>
+    <div>When</div>
+    <div>Input → Output</div>
+    <div>Constraint</div>
+  </div>
+  <div class="llm-pipeline">
+    <div class="llm-call">
+      <div class="llm-call-id">01</div>
+      <div class="llm-call-when">
+        <div class="llm-call-when-label">Onboarding</div>
+        <div class="llm-call-when-value">Step 2 — LinkedIn paste</div>
+      </div>
+      <div class="llm-call-io">
+        <div class="llm-call-io-label">Flow</div>
+        <div class="llm-call-io-value">LinkedIn paste <span class="arrow">→</span> Background summary</div>
+      </div>
+      <div class="llm-call-constraint">
+        <div class="llm-call-constraint-badge">Max 150 words</div>
+      </div>
+    </div>
+    <div class="llm-call">
+      <div class="llm-call-id">02</div>
+      <div class="llm-call-when">
+        <div class="llm-call-when-label">Onboarding</div>
+        <div class="llm-call-when-value">Step 4 — Style samples</div>
+      </div>
+      <div class="llm-call-io">
+        <div class="llm-call-io-label">Flow</div>
+        <div class="llm-call-io-value">First topic <span class="arrow">→</span> 5 one-paragraph samples</div>
+      </div>
+      <div class="llm-call-constraint">
+        <div class="llm-call-constraint-badge">Not stored</div>
+      </div>
+    </div>
+    <div class="llm-call">
+      <div class="llm-call-id">03</div>
+      <div class="llm-call-when">
+        <div class="llm-call-when-label">Onboarding</div>
+        <div class="llm-call-when-value">Step 4 — Finish onboarding</div>
+      </div>
+      <div class="llm-call-io">
+        <div class="llm-call-io-label">Flow</div>
+        <div class="llm-call-io-value">Selected styles + writing <span class="arrow">→</span> Style profile</div>
+      </div>
+      <div class="llm-call-constraint">
+        <div class="llm-call-constraint-badge">Max 200 words</div>
+      </div>
+    </div>
+    <div class="llm-call">
+      <div class="llm-call-id">04</div>
+      <div class="llm-call-when">
+        <div class="llm-call-when-label">Dashboard</div>
+        <div class="llm-call-when-value">Generate / Surprise Me</div>
+      </div>
+      <div class="llm-call-io">
+        <div class="llm-call-io-label">Flow</div>
+        <div class="llm-call-io-value">Profile + style + topic <span class="arrow">→</span> LinkedIn post</div>
+      </div>
+      <div class="llm-call-constraint">
+        <div class="llm-call-constraint-badge">Hook + Body + CTA</div>
+      </div>
+    </div>
+    <div class="llm-call">
+      <div class="llm-call-id">4a</div>
+      <div class="llm-call-when">
+        <div class="llm-call-when-label">Dashboard</div>
+        <div class="llm-call-when-value">Regenerate with comment</div>
+      </div>
+      <div class="llm-call-io">
+        <div class="llm-call-io-label">Flow</div>
+        <div class="llm-call-io-value">Same as 4 + note <span class="arrow">→</span> New post</div>
+      </div>
+      <div class="llm-call-constraint">
+        <div class="llm-call-constraint-badge">Replaces draft</div>
+      </div>
+    </div>
+    <div class="llm-call">
+      <div class="llm-call-id">05</div>
+      <div class="llm-call-when">
+        <div class="llm-call-when-label">Dashboard</div>
+        <div class="llm-call-when-value">Finalize post</div>
+      </div>
+      <div class="llm-call-io">
+        <div class="llm-call-io-label">Flow</div>
+        <div class="llm-call-io-value">Original + final + diff <span class="arrow">→</span> Updated style</div>
+      </div>
+      <div class="llm-call-constraint">
+        <div class="llm-call-constraint-badge">Max 200 words, ≤ prev</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONSTRAINTS -->
+<section class="reveal">
+  <div class="section-label">Key Constraints</div>
+  <h2 class="section-title">Five rules that keep the system simple</h2>
+  <p class="section-sub">These constraints prevent scope creep and context bloat. They are the guardrails for building with Cursor.</p>
+
+  <div class="constraints">
+    <div class="constraint-item">
+      <div class="constraint-num">01</div>
+      <div class="constraint-text"><strong>All stored LLM artifacts must be extremely concise.</strong> Style profile (200 words), background (150 words). Long documents bloat context and degrade output.</div>
+    </div>
+    <div class="constraint-item">
+      <div class="constraint-num">02</div>
+      <div class="constraint-text"><strong>Minimize manual data entry.</strong> 3 profile fields, one paste, 3-4 topics, style picks. Everything else is LLM-generated.</div>
+    </div>
+    <div class="constraint-item">
+      <div class="constraint-num">03</div>
+      <div class="constraint-text"><strong>Every table is userId-keyed.</strong> MVP is single-user, but the schema supports multi-user without restructuring. Zero-cost decision now.</div>
+    </div>
+    <div class="constraint-item">
+      <div class="constraint-num">04</div>
+      <div class="constraint-text"><strong>One LLM call per action.</strong> No chains, no loops, no agents. Regenerate = same call as generate with extra input.</div>
+    </div>
+    <div class="constraint-item">
+      <div class="constraint-num">05</div>
+      <div class="constraint-text"><strong>The learning loop is simple.</strong> Style profile text is the only thing that evolves. No training data, no fine-tuning, no separate feedback database.</div>
+    </div>
+    <div class="constraint-item" style="background:rgba(212,165,116,0.05);border-color:rgba(212,165,116,0.2)">
+      <div class="constraint-num" style="color:var(--gold)">→</div>
+      <div class="constraint-text"><strong>Next step: Prompt engineering.</strong> Actual LLM prompt text for all 5 calls. Separate session. This document defines what each call covers, not the exact prompts.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>AI GHOSTWRITER AGENT — PRODUCT OVERVIEW — BEACON HOUSE CAPSTONE</p>
+</footer>
+
+<script>
+// Step tab switching
+function switchStep(index) {
+  document.querySelectorAll('.step-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', i === index);
+  });
+  document.querySelectorAll('.step-content').forEach((content, i) => {
+    content.classList.toggle('active', i === index);
+  });
+}
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Learning loop animation
+let loopStep = 0;
+const loopNodes = [
+  document.getElementById('loop-node-1'),
+  document.getElementById('loop-node-2'),
+  document.getElementById('loop-node-3'),
+  document.getElementById('loop-node-4')
+];
+setInterval(() => {
+  loopNodes.forEach(n => n.classList.remove('active'));
+  loopNodes[loopStep].classList.add('active');
+  loopStep = (loopStep + 1) % 4;
+}, 2000);
+</script>
+
+</body>
+</html>
