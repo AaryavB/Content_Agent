@@ -1,0 +1,6 @@
+---
+description: 
+alwaysApply: true
+---
+
+Always go through C:\Users\Admin\OneDrive\Documents\Aaryav Personal\KG\PRD.md and C:\Users\Admin\OneDrive\Documents\Aaryav Personal\KG\functional-requirements.md to understand the context of this project before answering any question I ask. While these documents give the direction and approach, it is possible that these context docs could get stale as the project evolves. So, your source of truth must be the codebase itself.
