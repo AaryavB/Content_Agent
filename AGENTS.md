@@ -3,7 +3,7 @@
 AI Ghostwriter Agent — learns a founder's writing style and generates LinkedIn posts in their voice. Aaryav's capstone build. Own git repo: https://github.com/AaryavB/Content_Agent.git (branch `staging` is the working branch).
 
 ## Stack
-Next.js 15 (App Router) + React 19 + Tailwind CSS 4, Convex (schema/functions/DB), TypeScript. No LLM SDK wired in yet.
+Next.js 15 (App Router) + React 19 + Tailwind CSS 4, Convex (schema/functions/DB), TypeScript, OpenRouter (LLM calls via plain `fetch`, no SDK).
 
 ## Commands
 - `npm run dev` - Start Next.js dev server
@@ -20,6 +20,7 @@ Reference `.context/` files when needed:
 | progress.md | Checking what's built vs stubbed vs missing |
 | todo.md | Picking up the next build task |
 | db-schema.md | Working with Convex tables/queries/mutations |
+| integrations.md | Working with OpenRouter/LLM calls, env vars, adding a new external service |
 
 `PRD.md` and `functional-requirements.md` at repo root remain the canonical product spec (full data model, LLM call inventory, screen specs, build-group breakdown). `.context/` files summarize current *build state* against that spec — check both.
 
@@ -27,7 +28,7 @@ Reference `.context/` files when needed:
 - LLM calls are isolated in Convex **actions** (`convex/*Actions.ts`), which call an LLM then persist via a **mutation**. Frontend never calls an LLM directly — only actions/mutations/queries via Convex hooks.
 - All tables are `userId`-keyed even though MVP is single-user (no auth yet) — enables a straight add-auth path later without restructuring.
 - Onboarding is resumable: `userId` is cached in `sessionStorage` ([lib/onboardingSession.ts](lib/onboardingSession.ts)), and [lib/onboardingResume.ts](lib/onboardingResume.ts) derives which step to resume from based on which profile fields are populated.
-- **Current LLM actions are stubs** ([convex/lib/onboarding.ts](convex/lib/onboarding.ts)) — they return templated placeholder text, not real model output. No provider is chosen yet.
+- **Onboarding LLM calls (1-3) call OpenRouter for real** via [convex/lib/openrouter.ts](convex/lib/openrouter.ts) — not yet verified end-to-end against the live API (see [.context/integrations.md](.context/integrations.md) for a known reasoning-model risk on Call 2). Calls 4/4a/5 (post generation, finalize) aren't built — those screens don't exist yet.
 
 ---
 IMPORTANT: After ANY code change, update relevant `.context/` docs to keep this system alive and accurate.

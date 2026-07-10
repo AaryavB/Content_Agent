@@ -29,6 +29,6 @@ Last updated: 2026-07-10 (verified against code, branch `staging`, post-OpenRout
 
 ## Git state
 
-- Branch `staging`, tracks `origin/staging`, clean working tree as of last pull.
-- 6 commits total: PRD → PRD restructure → product overview HTML → AGENTS/CLAUDE.md → Next.js+Convex schema scaffold → Build Group 1 complete (`dc49735`).
-- Commits arrived as a single squashed push covering what was apparently several build sessions — no per-session commit granularity to reconstruct exact session boundaries from git history alone.
+- Branch `staging`, tracks `origin/staging`, clean working tree, up to date with remote as of this update.
+- Latest commits: `dc49735` (Build Group 1 onboarding complete, stubs) → `ce8fd48` (`.context/` system added) → `b48564c` (onboarding LLM calls 1-3 wired to real OpenRouter).
+- Earlier commits (PRD → PRD restructure → product overview HTML → AGENTS/CLAUDE.md → Next.js+Convex schema scaffold) arrived as a single squashed push covering what was apparently several build sessions — no per-session commit granularity to reconstruct exact session boundaries from git history alone.
