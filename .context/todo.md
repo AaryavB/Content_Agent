@@ -4,9 +4,12 @@ Last updated: 2026-07-10
 
 ## Next up (highest priority)
 
-1. **Prompt engineering session** — provider is decided (OpenRouter, `minimax/minimax-m3`, see prd.md), but actual prompt text for calls 1-5, token budgets, and output parsing (structured vs free text) are still open. Blocks replacing the onboarding stubs with real calls.
-2. **Env vars for OpenRouter — added to `.env.local`, not yet registered with Convex.** `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` are in `.env.local` (key value pending from Krishna). Convex actions run server-side on Convex's infra and do NOT read `.env.local` — these two vars also need to be set via `npx convex env set` or the Convex dashboard before any action can use them.
-3. **Wire real LLM calls into Build Group 1 actions** ([convex/onboardingActions.ts](../convex/onboardingActions.ts)) — replace `stubProfessionalBackground`, `stubStyleSample`, `stubStyleProfile` with real OpenRouter calls reading `OPENROUTER_MODEL` from env (so swapping models later is a config change). No OpenRouter SDK dependency in `package.json` yet — plain `fetch` to OpenRouter's OpenAI-compatible endpoint works fine and avoids adding a dependency.
+1. **Test onboarding end-to-end with real OpenRouter calls (next session).** Code is wired (see progress.md) and env vars are set on the Convex deployment, but nobody has walked the actual 4-step onboarding flow against the live API yet. Specifically verify:
+   - Step 2 (background inference) returns real, sensible ≤150-word prose, not an error.
+   - **Step 4 (style samples) is the highest-risk call** — `minimax/minimax-m3` is a reasoning model that spends some of its token budget on hidden "reasoning" tokens before producing content. A manual test showed it can return `content: null` with `finish_reason: "length"` when the budget is too tight. Call 2 asks for 5 full paragraphs as JSON within `max_tokens: 700` — this was never tested live. If it fails or truncates, first thing to try: raise `CALL2_PARAMS.maxTokens` in [convex/lib/onboardingPrompts.ts](../convex/lib/onboardingPrompts.ts).
+   - Finish onboarding → style profile synthesis produces a real, directive-style ≤200-word profile.
+   - Confirm `users.professionalBackground` and the `styleProfiles` row are populated with real (non-stub) text in the Convex dashboard.
+2. **If Call 2 truncates**, options to try in order: (a) bump `maxTokens`, (b) drop `responseFormatJson` if the model handles free-form JSON-in-prose better, (c) as a last resort split into fewer styles per call. Don't over-engineer until we see an actual failure.
 
 ## Build Group 2 — Post Generation (not started)
 

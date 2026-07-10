@@ -59,28 +59,3 @@ export function validateStyleProfileInput(
     );
   }
 }
-
-export function stubProfessionalBackground(linkedinPaste: string): string {
-  const excerpt = linkedinPaste.trim().replace(/\s+/g, " ").slice(0, 400);
-  const summary = `Professional background (stub): ${excerpt}. Industry and role context inferred from LinkedIn paste. Key achievements and experience summarized for content generation.`;
-  return truncateToWords(summary, 150);
-}
-
-export function stubStyleProfile(
-  selectedStyles: string[],
-  userWritingSample: string | undefined,
-  sampleWritingWeight: number,
-): string {
-  const stylesText = selectedStyles.join(" and ");
-  let profile = `Writing style profile (stub): Tone blends ${stylesText} qualities. Uses clear sentence structure, practical vocabulary, and concise paragraphs suited for LinkedIn.`;
-
-  if (userWritingSample?.trim()) {
-    profile += ` Prioritizes the user's own voice (${Math.round(sampleWritingWeight * 100)}% weight) with ${selectedStyles[0]} as refinement direction.`;
-  }
-
-  return truncateToWords(profile, 200);
-}
-
-export function stubStyleSample(topic: string, style: string): string {
-  return `[${style} stub] One paragraph on "${topic}" in a ${style} voice. Same core idea, different tone and framing for style selection during onboarding.`;
-}

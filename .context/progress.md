@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-07-10 (verified against code, branch `staging` @ dc49735)
+Last updated: 2026-07-10 (verified against code, branch `staging`, post-OpenRouter-wiring)
 
 ## Done
 
@@ -11,10 +11,15 @@ Last updated: 2026-07-10 (verified against code, branch `staging` @ dc49735)
 - Resume-on-refresh: `userId` cached in `sessionStorage` ([lib/onboardingSession.ts](../lib/onboardingSession.ts)), resume step derived in [lib/onboardingResume.ts](../lib/onboardingResume.ts). Covers the "user refreshes mid-onboarding" case from functional-requirements.md.
 - Home page ([components/HomeContent.tsx](../components/HomeContent.tsx)) links to `/onboarding`, shows a completion banner via `?onboarding=complete`.
 
-## Partial / stubbed — not real yet
+**Onboarding LLM calls (1, 2, 3) wired to real OpenRouter calls — needs end-to-end testing (see Todo)**
+- New [convex/lib/openrouter.ts](../convex/lib/openrouter.ts): shared `fetch`-based client (`chatCompletion`, `chatCompletionJson` with fence-strip + single retry). Plain V8 runtime, no `"use node"`, no SDK dependency.
+- New [convex/lib/onboardingPrompts.ts](../convex/lib/onboardingPrompts.ts): prompt text for calls 1-3, mirrors `../prompt-engineering.md` 1:1.
+- [convex/onboardingActions.ts](../convex/onboardingActions.ts) rewritten: `inferProfessionalBackground`, `generateStyleSamples`, `synthesizeStyleProfile` now call OpenRouter instead of the stubs. Stubs removed from `convex/lib/onboarding.ts`.
+- Convex deployment env vars **set** (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL=minimax/minimax-m3` via `npx convex env set`) — confirmed present via `npx convex env list`.
+- `npx convex dev --once` compiles/deploys clean; `npx tsc --noEmit` passes.
+- `npm install` was required (node_modules was missing) — done.
 
-- **All 3 onboarding LLM calls are stubs**, not real model calls ([convex/lib/onboarding.ts](../convex/lib/onboarding.ts)): `stubProfessionalBackground`, `stubStyleSample`, `stubStyleProfile` return templated placeholder text. Wired correctly (action → mutation → DB), but no model is actually called.
-- No LLM SDK dependency in `package.json` (no `openai`, `@anthropic-ai/sdk`, `ai`, etc.). Provider/model choice is unresolved.
+**Known risk, not yet resolved:** `minimax/minimax-m3` is a reasoning model — a quick manual OpenRouter test showed it can return `content: null` (all budget spent on hidden reasoning tokens) when `max_tokens` is too tight, with `finish_reason: "length"`. A follow-up test with realistic Call-1-sized params returned real content fine, but **Call 2 (5 style samples, JSON, max_tokens 700) was not yet verified against the live API** — reasoning tokens + 5 paragraphs of JSON could still truncate mid-JSON and fail to parse even after the built-in retry. Needs live testing before trusting onboarding end-to-end.
 
 ## Not started
 
