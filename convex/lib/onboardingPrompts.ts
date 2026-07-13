@@ -8,7 +8,11 @@
 // Call 1 — Background Inference (plain text, max 150 words)
 // ---------------------------------------------------------------------------
 
-export const CALL1_PARAMS = { temperature: 0.3, maxTokens: 300 } as const;
+export const CALL1_PARAMS = {
+  temperature: 0.3,
+  maxTokens: 600,
+  reasoningEffort: "none",
+} as const;
 
 export const CALL1_SYSTEM = `You are a precise editor who extracts professional background summaries from raw LinkedIn text.
 
@@ -31,7 +35,13 @@ Write the professional background summary now.`;
 // Call 2 — Style Sample Generation (JSON, 5 samples, one per style)
 // ---------------------------------------------------------------------------
 
-export const CALL2_PARAMS = { temperature: 0.9, maxTokens: 700 } as const;
+// Reasoning disabled: minimax-m3 spends hidden tokens on thinking, which
+// truncated Call 2 JSON at 700 max_tokens. 2500 leaves room for 5 paragraphs.
+export const CALL2_PARAMS = {
+  temperature: 0.9,
+  maxTokens: 2500,
+  reasoningEffort: "none",
+} as const;
 
 export const CALL2_SYSTEM = `You are a versatile LinkedIn ghostwriter. Given a single topic, write the SAME core idea as 5 short one-paragraph LinkedIn post openers, one in each of these 5 distinct voices:
 
@@ -56,7 +66,11 @@ Generate the 5 samples now.`;
 // Call 3 — Style Profile Synthesis (plain text, max 200 words)
 // ---------------------------------------------------------------------------
 
-export const CALL3_PARAMS = { temperature: 0.4, maxTokens: 300 } as const;
+export const CALL3_PARAMS = {
+  temperature: 0.4,
+  maxTokens: 800,
+  reasoningEffort: "none",
+} as const;
 
 export const CALL3_SYSTEM = `You are a writing-style analyst. Produce a Writing Style Profile that will be injected into future prompts as directives for an AI ghostwriter to follow — write actionable rules, not vague description. ("Uses short punchy sentences, opens with a direct claim, avoids hedging language" — not "the writing is confident.")
 

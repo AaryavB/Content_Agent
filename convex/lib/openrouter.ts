@@ -6,12 +6,22 @@
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const REQUEST_TIMEOUT_MS = 60_000;
 
+export type ReasoningEffort =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
+
 export type ChatParams = {
   system: string;
   user: string;
   temperature: number;
   maxTokens: number;
   responseFormatJson?: boolean;
+  reasoningEffort?: ReasoningEffort;
 };
 
 type OpenRouterResponse = {
@@ -42,6 +52,10 @@ export async function chatCompletion(params: ChatParams): Promise<string> {
   // fence-strip and retry, so we never rely on it.
   if (params.responseFormatJson) {
     body.response_format = { type: "json_object" };
+  }
+
+  if (params.reasoningEffort) {
+    body.reasoning = { effort: params.reasoningEffort };
   }
 
   const controller = new AbortController();

@@ -14,7 +14,7 @@
 
 ## Call 1 — Background Inference
 
-**Params:** temperature 0.3, max_tokens ~300. **Output:** plain text.
+**Params:** temperature 0.3, max_tokens ~600, `reasoning.effort: "none"`. **Output:** plain text.
 
 **System prompt:**
 ```
@@ -41,7 +41,7 @@ Write the professional background summary now.
 
 ## Call 2 — Style Sample Generation
 
-**Params:** temperature 0.9 (want visible variety across 5 samples), max_tokens ~700. **Output:** JSON.
+**Params:** temperature 0.9 (want visible variety across 5 samples), max_tokens ~2500, `reasoning.effort: "none"` (minimax-m3 otherwise burns the budget on hidden thinking tokens and truncates mid-JSON). **Output:** JSON.
 
 **System prompt:**
 ```
@@ -70,7 +70,7 @@ Generate the 5 samples now.
 
 ## Call 3 — Style Profile Synthesis
 
-**Params:** temperature 0.4, max_tokens ~300. **Output:** plain text.
+**Params:** temperature 0.4, max_tokens ~800, `reasoning.effort: "none"`. **Output:** plain text.
 
 **System prompt:**
 ```
