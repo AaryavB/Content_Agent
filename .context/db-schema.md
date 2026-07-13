@@ -1,6 +1,6 @@
 # DB Schema (Convex)
 
-Last updated: 2026-07-10. Source of truth: [convex/schema.ts](../convex/schema.ts) — verify there before trusting this summary.
+Last updated: 2026-07-13. Source of truth: [convex/schema.ts](../convex/schema.ts) — verify there before trusting this summary.
 
 All tables are `userId`-keyed by design (MVP is single-user/no auth, but schema is multi-user-ready).
 
@@ -13,7 +13,7 @@ One per user. Index: `by_user`. `profileText` (LLM-synthesized, max 200 words, u
 ## `posts`
 Indexes: `by_user`, `by_user_status`. `topic`, `userInput` (optional, empty for "surprise-me"), `mode` ("user-led" | "surprise-me"), `generatedContent` (replaced on regenerate), `regenerateNote` (optional angle comment), `finalContent` (optional, set on finalize), `status` ("draft" | "finalized" | "rejected"), `editsDiff` (optional, set on finalize), `createdAt`, `finalizedAt` (optional).
 
-**Not yet built**: no queries/mutations/actions exist against this table yet (Build Group 2/3). Schema is defined but unused so far.
+**Live functions (Build Group 2 Phase 1):** [convex/posts.ts](../convex/posts.ts) — `getPost`, `createPost`. [convex/postActions.ts](../convex/postActions.ts) — `generatePost` (Call 4). Not yet built: `getPostsByUser`, `regeneratePost`, `rejectPost`, finalize fields.
 
 ## `backgroundInputs`
 Index: `by_user`. Raw LinkedIn paste (`linkedinPaste`) stored separately from the inferred summary, for reference/re-processing. `createdAt`.

@@ -185,7 +185,7 @@ export function OnboardingWizard() {
       });
 
       clearStoredUserId();
-      router.push("/?onboarding=complete");
+      router.push("/dashboard");
     } catch (error) {
       setStepError(getErrorMessage(error));
     } finally {

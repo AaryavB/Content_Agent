@@ -1,13 +1,13 @@
 # Integrations
 
-Last updated: 2026-07-10
+Last updated: 2026-07-13
 
 ## OpenRouter (only external service)
 
-Used for all 5 LLM calls in the PRD. Calls 1-3 (onboarding) are wired; 4/4a/5 are not (no code exists yet for those screens).
+Used for all 5 LLM calls in the PRD. Calls 1-3 (onboarding) and Call 4 (post generation) are wired; 4a/5 are not yet built.
 
 - **Client:** [convex/lib/openrouter.ts](../convex/lib/openrouter.ts) — plain `fetch` to `https://openrouter.ai/api/v1/chat/completions` (OpenAI-compatible). No SDK dependency, runs on the default Convex V8 runtime (no `"use node"`).
-- **Prompts:** [convex/lib/onboardingPrompts.ts](../convex/lib/onboardingPrompts.ts), mirrors `../prompt-engineering.md` 1:1.
+- **Prompts:** [convex/lib/onboardingPrompts.ts](../convex/lib/onboardingPrompts.ts) (Calls 1-3), [convex/lib/postPrompts.ts](../convex/lib/postPrompts.ts) (Call 4/4a) — mirror `../prompt-engineering.md` 1:1.
 - **Model:** read from `OPENROUTER_MODEL` env var (currently `minimax/minimax-m3`), not hardcoded — swapping models is a config change, not a code change.
 - **JSON calls** (style samples, and future finalize call): `chatCompletionJson()` strips ` ```json ` fences, parses, and retries the whole call once on any failure.
 

@@ -16,17 +16,31 @@ export function HomeContent() {
 
       {onboardingComplete ? (
         <div className="mt-6 w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          Onboarding complete. Your profile and writing style are saved in
-          Convex and ready for the next phase.
+          Onboarding complete. Your profile and writing style are saved and
+          ready for post generation.
         </div>
       ) : null}
 
-      <Link
-        href="/onboarding"
-        className="mt-8 rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
-      >
-        Start onboarding
-      </Link>
+      <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+        {onboardingComplete ? (
+          <Link
+            href="/dashboard"
+            className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
+          >
+            Generate posts
+          </Link>
+        ) : null}
+        <Link
+          href="/onboarding"
+          className={`rounded-lg px-5 py-2.5 text-sm font-medium transition ${
+            onboardingComplete
+              ? "border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
+              : "bg-zinc-900 text-white hover:bg-zinc-800"
+          }`}
+        >
+          {onboardingComplete ? "Review onboarding" : "Start onboarding"}
+        </Link>
+      </div>
     </main>
   );
 }
