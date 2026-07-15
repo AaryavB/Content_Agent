@@ -1,19 +1,12 @@
 # Todo
 
-Last updated: 2026-07-13
+Last updated: 2026-07-15
 
 ## Next up (highest priority)
 
-1. **Test post generation end-to-end (Build Group 2 Phase 1).** Walk `/dashboard` with a user who completed onboarding: enter topic + opinion → Generate → confirm draft in UI and `posts` table (`status: "draft"`). Verify Call 4 against live OpenRouter (`reasoningEffort: "none"`, `maxTokens: 600`).
+1. **Test post generation end-to-end (Build Group 2).** On `/dashboard`: Generate, Surprise Me, Regenerate (with/without note), Reject. Confirm `posts` table states (`draft`, `rejected`) and `regenerateNote` persistence. Verify Call 4/4a against live OpenRouter.
 
 2. **Test onboarding end-to-end** (if not done yet). See [integrations.md](integrations.md) for Call 2 reasoning-token risk.
-
-## Build Group 2 — Phase 2 (remaining post generation)
-
-- `getPostsByUser` query; `regeneratePost` mutation, `rejectPost` mutation.
-- `regeneratePostAction` (LLM call 4a) — reuses `call4User()` with `regenerateNote`.
-- Dashboard UI: Surprise Me button, Regenerate + comment input, Reject with confirmation.
-- Full spec: `functional-requirements.md` §Build Group 2 (items not done in Phase 1).
 
 ## Build Group 3 — Polish, Publish + Repository (not started)
 

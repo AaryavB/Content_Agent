@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { getStoredUserId } from "@/lib/onboardingSession";
@@ -11,20 +11,27 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
 
+function pickRandomTopic(topics: string[]): string {
+  return topics[Math.floor(Math.random() * topics.length)];
+}
+
 export function DashboardContent() {
   const router = useRouter();
   const generatePost = useAction(api.postActions.generatePost);
+  const regeneratePostAction = useAction(api.postActions.regeneratePostAction);
+  const rejectPost = useMutation(api.posts.rejectPost);
 
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
   const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
   const [topic, setTopic] = useState("");
   const [userInput, setUserInput] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [postId, setPostId] = useState<Id<"posts"> | null>(null);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [regenerateNote, setRegenerateNote] = useState("");
 
   useEffect(() => {
     setStoredUserId(getStoredUserId());
@@ -46,7 +53,7 @@ export function DashboardContent() {
     }
 
     if (!storedUserId) {
-      router.replace("/onboarding");
+      router.replace("/");
       return;
     }
 
@@ -55,7 +62,7 @@ export function DashboardContent() {
     }
 
     if (user === null || styleProfile === null) {
-      router.replace("/onboarding");
+      router.replace("/");
     }
   }, [hasCheckedSession, storedUserId, user, styleProfile, router]);
 
@@ -65,14 +72,17 @@ export function DashboardContent() {
     user === undefined ||
     styleProfile === undefined;
 
-  const canGenerate = topic.trim().length > 0 && !isGenerating;
+  const canGenerate = topic.trim().length > 0 && !isBusy;
+  const canSurpriseMe = user !== undefined && user !== null && user.topics.length > 0 && !isBusy;
+  const canRegenerate = postId !== null && !isBusy;
+  const canReject = postId !== null && !isBusy;
 
   async function handleGenerate() {
     if (!storedUserId || !canGenerate) {
       return;
     }
 
-    setIsGenerating(true);
+    setIsBusy(true);
     setError(null);
 
     try {
@@ -85,10 +95,89 @@ export function DashboardContent() {
 
       setPostId(result.postId);
       setGeneratedContent(result.generatedContent);
+      setRegenerateNote("");
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
-      setIsGenerating(false);
+      setIsBusy(false);
+    }
+  }
+
+  async function handleSurpriseMe() {
+    if (!storedUserId || !user || !canSurpriseMe) {
+      return;
+    }
+
+    const randomTopic = pickRandomTopic(user.topics);
+
+    setIsBusy(true);
+    setError(null);
+
+    try {
+      const result = await generatePost({
+        userId: storedUserId as Id<"users">,
+        topic: randomTopic,
+        mode: "surprise-me",
+      });
+
+      setTopic(randomTopic);
+      setUserInput("");
+      setPostId(result.postId);
+      setGeneratedContent(result.generatedContent);
+      setRegenerateNote("");
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleRegenerate() {
+    if (!postId || !canRegenerate) {
+      return;
+    }
+
+    setIsBusy(true);
+    setError(null);
+
+    try {
+      const result = await regeneratePostAction({
+        postId,
+        regenerateNote: regenerateNote.trim() || undefined,
+      });
+
+      setGeneratedContent(result.generatedContent);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleReject() {
+    if (!postId || !canReject) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Reject this post? It will be saved but won't affect your style profile.",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setIsBusy(true);
+    setError(null);
+
+    try {
+      await rejectPost({ postId });
+      setPostId(null);
+      setGeneratedContent(null);
+      setRegenerateNote("");
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsBusy(false);
     }
   }
 
@@ -123,7 +212,8 @@ export function DashboardContent() {
               type="text"
               value={topic}
               onChange={(event) => setTopic(event.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2"
+              disabled={isBusy}
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
               placeholder="e.g. Startup building"
             />
           </label>
@@ -136,7 +226,8 @@ export function DashboardContent() {
               value={userInput}
               onChange={(event) => setUserInput(event.target.value)}
               rows={4}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2"
+              disabled={isBusy}
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
               placeholder="What's your angle or opinion on this topic?"
             />
           </label>
@@ -152,14 +243,24 @@ export function DashboardContent() {
             </p>
           ) : null}
 
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!canGenerate}
-            className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isGenerating ? "Generating..." : "Generate"}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!canGenerate}
+              className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isBusy ? "Generating..." : "Generate"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSurpriseMe}
+              disabled={!canSurpriseMe}
+              className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Surprise Me
+            </button>
+          </div>
         </div>
       </section>
 
@@ -169,6 +270,41 @@ export function DashboardContent() {
           <p className="mt-1 text-sm text-zinc-600">Topic: {topic.trim()}</p>
           <div className="mt-4 whitespace-pre-wrap rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-3 text-sm leading-relaxed text-zinc-800">
             {generatedContent}
+          </div>
+
+          <div className="mt-6 space-y-4">
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-zinc-700">
+                Regenerate with guidance (optional)
+              </span>
+              <input
+                type="text"
+                value={regenerateNote}
+                onChange={(event) => setRegenerateNote(event.target.value)}
+                disabled={isBusy}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
+                placeholder="e.g. make it more punchy"
+              />
+            </label>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleRegenerate}
+                disabled={!canRegenerate}
+                className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isBusy ? "Regenerating..." : "Regenerate"}
+              </button>
+              <button
+                type="button"
+                onClick={handleReject}
+                disabled={!canReject}
+                className="rounded-lg border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Reject
+              </button>
+            </div>
           </div>
         </section>
       ) : null}

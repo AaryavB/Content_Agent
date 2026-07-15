@@ -4,13 +4,28 @@ export function getStoredUserId(): string | null {
   if (typeof window === "undefined") {
     return null;
   }
-  return sessionStorage.getItem(USER_ID_KEY);
+
+  const fromLocal = localStorage.getItem(USER_ID_KEY);
+  if (fromLocal) {
+    return fromLocal;
+  }
+
+  const fromSession = sessionStorage.getItem(USER_ID_KEY);
+  if (fromSession) {
+    localStorage.setItem(USER_ID_KEY, fromSession);
+    sessionStorage.removeItem(USER_ID_KEY);
+    return fromSession;
+  }
+
+  return null;
 }
 
 export function setStoredUserId(userId: string): void {
-  sessionStorage.setItem(USER_ID_KEY, userId);
+  localStorage.setItem(USER_ID_KEY, userId);
+  sessionStorage.removeItem(USER_ID_KEY);
 }
 
 export function clearStoredUserId(): void {
+  localStorage.removeItem(USER_ID_KEY);
   sessionStorage.removeItem(USER_ID_KEY);
 }

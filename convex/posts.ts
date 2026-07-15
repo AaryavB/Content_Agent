@@ -1,7 +1,32 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { Doc } from "./_generated/dataModel";
 
 const POST_MODES = ["user-led", "surprise-me"] as const;
+
+function assertDraftPost(post: Doc<"posts"> | null): Doc<"posts"> {
+  if (!post) {
+    throw new Error("Post not found.");
+  }
+
+  if (post.status !== "draft") {
+    throw new Error("Only draft posts can be updated.");
+  }
+
+  return post;
+}
+
+export const getPostsByUser = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const posts = await ctx.db
+      .query("posts")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    return posts.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
 
 export const getPost = query({
   args: { postId: v.id("posts") },
@@ -47,5 +72,35 @@ export const createPost = mutation({
       status: "draft",
       createdAt: Date.now(),
     });
+  },
+});
+
+export const regeneratePost = mutation({
+  args: {
+    postId: v.id("posts"),
+    generatedContent: v.string(),
+    regenerateNote: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertDraftPost(await ctx.db.get(args.postId));
+
+    const generatedContent = args.generatedContent.trim();
+    if (!generatedContent) {
+      throw new Error("Generated content is required.");
+    }
+
+    await ctx.db.patch(args.postId, {
+      generatedContent,
+      regenerateNote: args.regenerateNote?.trim() || undefined,
+    });
+  },
+});
+
+export const rejectPost = mutation({
+  args: { postId: v.id("posts") },
+  handler: async (ctx, args) => {
+    assertDraftPost(await ctx.db.get(args.postId));
+
+    await ctx.db.patch(args.postId, { status: "rejected" });
   },
 });

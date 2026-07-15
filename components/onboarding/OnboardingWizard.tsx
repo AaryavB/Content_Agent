@@ -83,7 +83,7 @@ export function OnboardingWizard() {
     const resumeStep = getResumeStep(user, styleProfile !== null);
 
     if (resumeStep === "complete") {
-      router.replace("/");
+      router.replace("/dashboard");
       return;
     }
 

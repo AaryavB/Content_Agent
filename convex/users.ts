@@ -2,6 +2,32 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { validateTopics } from "./lib/onboarding";
 
+export const listUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    const sorted = users.sort((a, b) => b.createdAt - a.createdAt);
+
+    return await Promise.all(
+      sorted.map(async (user) => {
+        const styleProfile = await ctx.db
+          .query("styleProfiles")
+          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .first();
+
+        return {
+          userId: user._id,
+          name: user.name,
+          role: user.role,
+          organization: user.organization,
+          createdAt: user.createdAt,
+          hasStyleProfile: styleProfile !== null,
+        };
+      }),
+    );
+  },
+});
+
 export const getUser = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
