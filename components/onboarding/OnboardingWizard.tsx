@@ -184,7 +184,6 @@ export function OnboardingWizard() {
         sampleWritingWeight: payload.sampleWritingWeight,
       });
 
-      clearStoredUserId();
       router.push("/dashboard");
     } catch (error) {
       setStepError(getErrorMessage(error));
