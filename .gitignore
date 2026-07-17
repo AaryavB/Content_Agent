@@ -5,9 +5,6 @@ node_modules/
 .next/
 out/
 
-# convex
-convex/_generated/
-
 # env
 .env.local
 .env*.local
