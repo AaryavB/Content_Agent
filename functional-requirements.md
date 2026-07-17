@@ -89,6 +89,7 @@ export default defineSchema({
 
 | Function | Args | Returns | Purpose |
 |---|---|---|---|
+| `listUsers` | none | `{ userId, name, role, organization, createdAt, hasStyleProfile }[]` | List all profiles for home-screen picker, newest first |
 | `getUser` | `userId: v.id("users")` | User doc or null | Fetch user profile for onboarding/generation context |
 | `getStyleProfile` | `userId: v.id("users")` | StyleProfile doc or null | Fetch active style profile |
 | `getBackgroundInput` | `userId: v.id("users")` | BackgroundInput doc or null | Fetch raw LinkedIn paste (for re-processing if needed) |
@@ -150,7 +151,24 @@ export default defineSchema({
 | Prompt coverage | Synthesize selected styles + optional user writing into concise style profile. Cover: tone, sentence structure, vocabulary patterns, formatting habits, thinking patterns. Weight user writing at 75% if provided. Max 200 words. |
 | Loading UX | Show processing state on step 4. Redirect to dashboard on completion. |
 
-### 1.4 Screen Spec: Onboarding (Multi-Step Form)
+### 1.4 Screen Spec: Home (Profile Picker)
+
+**Route:** `/`
+
+**Layout:** Profile list as the app entry point. No auth in MVP — all rows in `users` are visible to the operator.
+
+| Element | Type | Behavior |
+|---|---|---|
+| Profile list | Cards from `listUsers` query | Shows name, role, organization, created date |
+| Status badge | Per card | "Ready" if `hasStyleProfile`, else "Continue setup" |
+| Select profile | Card click | Stores `userId` in `localStorage` ([lib/onboardingSession.ts](../lib/onboardingSession.ts)). Navigates to `/dashboard` if ready, else `/onboarding` to resume |
+| Last selected | Visual highlight | Card matching stored `userId` is highlighted |
+| Create new profile | Button | Clears stored `userId`, navigates to `/onboarding` step 1 (new `createUser` row) |
+| Empty state | Static + button | "No profiles yet" with **Create profile** CTA |
+
+**Data flow:** On mount, call `listUsers()`. User selects a profile or creates new. Dashboard and onboarding read active `userId` from `localStorage`. If `/dashboard` is opened with no stored ID or invalid/incomplete profile, redirect to `/`.
+
+### 1.5 Screen Spec: Onboarding (Multi-Step Form)
 
 **Route:** `/onboarding`
 
@@ -205,7 +223,7 @@ export default defineSchema({
 
 **Data flow:** User selects styles and optionally writes own sample, clicks Finish. Frontend calls `synthesizeStyleProfile({ userId, selectedStyles, userWritingSample, sampleWritingWeight })`. Show loading state. Action calls LLM, stores via `createStyleProfile` mutation. On completion, redirect to `/dashboard`.
 
-### 1.5 Error Handling (Group 1)
+### 1.6 Error Handling (Group 1)
 
 | Scenario | Handling |
 |---|---|
