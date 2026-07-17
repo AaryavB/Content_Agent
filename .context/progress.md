@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-07-17 (Build Group 3 complete — MVP feature-complete)
+Last updated: 2026-07-17 (MVP feature-complete; Netlify deploy fixed)
 
 ## Done
 
@@ -32,14 +32,21 @@ Last updated: 2026-07-17 (Build Group 3 complete — MVP feature-complete)
 - [convex/postActions.ts](../convex/postActions.ts): `finalizePostAction` — skips Call 5 when no edits; graceful degrade if `updateStyleProfile` fails after LLM succeeds.
 - `/dashboard` ([components/dashboard/DashboardContent.tsx](../components/dashboard/DashboardContent.tsx)): inline Edit (Save/Cancel), Finalize with loading state, Copy on finalized draft, "My Posts" repository (preview, View Full, Copy). Amber warning on profile-update failure.
 
+**Deployment**
+- **Netlify** — frontend hosted from `master` branch. [netlify.toml](../netlify.toml) sets Node 20, `npm run build`.
+- **Netlify build fix (2026-07-17)** — `convex/_generated/` committed to repo (was gitignored; Netlify couldn't resolve `@/convex/_generated/api`). Regenerate locally with `npx convex dev` or `npx convex codegen` after any `convex/` change, then commit updated bindings.
+- **Runtime env on Netlify** — `NEXT_PUBLIC_CONVEX_URL` must be set in Netlify dashboard (see [integrations.md](integrations.md)).
+- **Convex backend** — dev deployment `impressive-wildebeest-890` (`https://impressive-wildebeest-890.convex.cloud`). LLM env vars live on Convex deployment, not Netlify.
+
 ## Pending verification
 
-- **Group 3 manual E2E** — see [.context/todo.md](todo.md). Build + Convex deploy verified; live LLM finalize flow needs app walkthrough.
+- **Group 3 manual E2E** — see [todo.md](todo.md). Build + Convex deploy verified; live LLM finalize flow needs app walkthrough on production URL.
+- **Netlify production smoke test** — confirm app loads and connects to Convex after env var is set.
 
 ## Deferred
 
-- **LLM output quality tuning** — prompt iteration, model comparison, real founder usage cycles. Learning loop is now live.
+- **LLM output quality tuning** — prompt iteration, model comparison, real founder usage cycles. Learning loop is live.
 
 ## Git state
 
-- Branch `staging`. See `git log` for latest commits.
+- Branches `staging` and `master` synced (as of 2026-07-17). Repo: https://github.com/AaryavB/Content_Agent

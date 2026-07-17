@@ -2,9 +2,14 @@
 
 Last updated: 2026-07-17
 
-## Next up (highest priority): Quality tuning + Group 3 E2E verification
+## Next up (highest priority): Production verify + quality tuning
 
-Build Group 3 is **built** (2026-07-17). Run the manual E2E checklist in the app before treating MVP as done:
+### Netlify / production
+
+1. Confirm `NEXT_PUBLIC_CONVEX_URL` is set in Netlify → Site settings → Environment variables (`https://impressive-wildebeest-890.convex.cloud`).
+2. Redeploy and smoke-test: profile picker → onboarding → dashboard → generate → edit → finalize → copy → repository.
+
+### Group 3 E2E (local or production)
 
 1. Generate draft → Edit → Save → Finalize → Copy → confirm post in repository
 2. Finalize without edits — post finalized, no style profile update
@@ -25,8 +30,9 @@ Build Group 3 is **built** (2026-07-17). Run the manual E2E checklist in the app
 - ~~Build Group 3 — dashboard UI~~ — Edit, Finalize, Copy, My Posts repository
 - ~~Test onboarding end-to-end (Calls 1–3)~~ — verified 2026-07-17
 - ~~Test post generation end-to-end (Build Group 2)~~ — verified 2026-07-17
+- ~~Netlify build fix~~ — commit `convex/_generated/`, add `netlify.toml` (2026-07-17)
+- ~~Update `.context/db-schema.md`~~ — synced 2026-07-17
 
 ## Housekeeping
 
 - ~~Reconcile the mentoring/session narrative in `../../context-documents/aaryav-project-context.md`~~ — done 2026-07-13
-- Update `.context/db-schema.md` to match current post functions (lags `progress.md`)
