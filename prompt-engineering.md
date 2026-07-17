@@ -1,6 +1,6 @@
 # Prompt Engineering — 5 LLM Calls
 
-**Status:** Draft for review. Calls 1–3 wired in `convex/onboardingActions.ts`; Call 4 wired in `convex/postActions.ts`; Call 5 not yet built.
+**Status:** Draft for review. Calls 1–3 wired in `convex/onboardingActions.ts`; Calls 4/4a wired in `convex/postActions.ts`; Call 5 wired in `convex/postActions.ts` (`finalizePostAction`).
 
 **Provider:** OpenRouter, OpenAI-compatible chat completions endpoint. Model comes from `OPENROUTER_MODEL` env var (currently `minimax/minimax-m3`) — every call reads the same env var for now. A per-call override is a natural extension point later (e.g. `OPENROUTER_MODEL_POST`) but isn't built, per the "same model for all calls initially, split later during quality testing" plan.
 

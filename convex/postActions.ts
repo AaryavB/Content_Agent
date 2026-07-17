@@ -2,8 +2,17 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
-import { chatCompletion } from "./lib/openrouter";
-import { CALL4_PARAMS, CALL4_SYSTEM, call4User } from "./lib/postPrompts";
+import { chatCompletion, chatCompletionJson } from "./lib/openrouter";
+import {
+  CALL4_PARAMS,
+  CALL4_SYSTEM,
+  CALL5_PARAMS,
+  CALL5_SYSTEM,
+  call4User,
+  call5User,
+  parseCall5Result,
+} from "./lib/postPrompts";
+import { truncateToWords } from "./lib/onboarding";
 
 export const generatePost = action({
   args: {
@@ -131,5 +140,90 @@ export const regeneratePostAction = action({
     });
 
     return { generatedContent };
+  },
+});
+
+export const finalizePostAction = action({
+  args: {
+    postId: v.id("posts"),
+    finalContent: v.string(),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    updatedProfileText: string | null;
+    profileUpdateFailed: boolean;
+  }> => {
+    const post = await ctx.runQuery(api.posts.getPost, { postId: args.postId });
+    if (!post) {
+      throw new Error("Post not found.");
+    }
+
+    if (post.status !== "draft") {
+      throw new Error("Only draft posts can be finalized.");
+    }
+
+    const finalContent = args.finalContent.trim();
+    if (!finalContent) {
+      throw new Error("Final content is required.");
+    }
+
+    if (finalContent === post.generatedContent) {
+      await ctx.runMutation(api.posts.finalizePost, {
+        postId: args.postId,
+        finalContent,
+      });
+
+      return { updatedProfileText: null, profileUpdateFailed: false };
+    }
+
+    const styleProfile = await ctx.runQuery(api.users.getStyleProfile, {
+      userId: post.userId,
+    });
+    if (!styleProfile) {
+      throw new Error("Style profile not found. Complete onboarding first.");
+    }
+
+    const call5Result = await chatCompletionJson(
+      {
+        system: CALL5_SYSTEM,
+        user: call5User({
+          currentProfileText: styleProfile.profileText,
+          generatedContent: post.generatedContent,
+          finalContent,
+        }),
+        ...CALL5_PARAMS,
+        responseFormatJson: true,
+      },
+      parseCall5Result,
+    );
+
+    const updatedProfileText = truncateToWords(
+      call5Result.updatedProfileText,
+      200,
+    );
+
+    let profileUpdateFailed = false;
+
+    try {
+      await ctx.runMutation(api.users.updateStyleProfile, {
+        userId: post.userId,
+        profileText: updatedProfileText,
+      });
+    } catch {
+      profileUpdateFailed = true;
+    }
+
+    await ctx.runMutation(api.posts.finalizePost, {
+      postId: args.postId,
+      finalContent,
+      editsDiff: call5Result.editsDiff,
+    });
+
+    return {
+      updatedProfileText: profileUpdateFailed ? null : updatedProfileText,
+      profileUpdateFailed,
+    };
   },
 });

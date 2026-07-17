@@ -28,6 +28,22 @@ export const getPostsByUser = query({
   },
 });
 
+export const getFinalizedPosts = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const posts = await ctx.db
+      .query("posts")
+      .withIndex("by_user_status", (q) =>
+        q.eq("userId", args.userId).eq("status", "finalized"),
+      )
+      .collect();
+
+    return posts
+      .filter((post) => post.finalizedAt !== undefined)
+      .sort((a, b) => (b.finalizedAt ?? 0) - (a.finalizedAt ?? 0));
+  },
+});
+
 export const getPost = query({
   args: { postId: v.id("posts") },
   handler: async (ctx, args) => {
@@ -102,5 +118,28 @@ export const rejectPost = mutation({
     assertDraftPost(await ctx.db.get(args.postId));
 
     await ctx.db.patch(args.postId, { status: "rejected" });
+  },
+});
+
+export const finalizePost = mutation({
+  args: {
+    postId: v.id("posts"),
+    finalContent: v.string(),
+    editsDiff: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    assertDraftPost(await ctx.db.get(args.postId));
+
+    const finalContent = args.finalContent.trim();
+    if (!finalContent) {
+      throw new Error("Final content is required.");
+    }
+
+    await ctx.db.patch(args.postId, {
+      status: "finalized",
+      finalContent,
+      editsDiff: args.editsDiff?.trim() || undefined,
+      finalizedAt: Date.now(),
+    });
   },
 });

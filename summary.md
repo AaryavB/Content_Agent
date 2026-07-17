@@ -1,6 +1,6 @@
 # AI Ghostwriter Agent — Project Summary
 
-**Last updated:** 2026-07-17  
+**Last updated:** 2026-07-17 (plan revised after Groups 1–2 E2E verification)  
 **Repo:** [Content_Agent](https://github.com/AaryavB/Content_Agent.git) (working branch: `staging`)  
 **Author:** Aaryav (capstone build)
 
@@ -49,11 +49,11 @@ The product follows a 3-step flow:
 
 | Build Group | Scope | Status |
 |---|---|---|
-| **Group 1** | Foundation + Onboarding | **Built** |
-| **Group 2** | Post Generation (dashboard, generate, regenerate, reject) | **Built** |
-| **Group 3** | Polish, Publish + Repository (edit, finalize, copy, history) | **Not started** |
+| **Group 1** | Foundation + Onboarding | **Built + verified** |
+| **Group 2** | Post Generation (dashboard, generate, regenerate, reject) | **Built + verified** |
+| **Group 3** | Polish, Publish + Repository (edit, finalize, copy, history) | **Built** |
 
-**MVP completion estimate:** ~70% — onboarding and generation flows are in place; the learning loop (finalize + style update) and post repository are still missing.
+**MVP completion estimate:** ~95% feature-complete. All three build groups shipped; Group 3 E2E walkthrough and quality tuning remain.
 
 ---
 
@@ -171,19 +171,19 @@ Until Group 3 is built, the learning loop (style profile improving with each fin
 
 | Call | When | Status |
 |---|---|---|
-| 1. Background inference | Onboarding step 2 | Wired — needs end-to-end verification |
-| 2. Style sample generation | Onboarding step 4 | Wired — needs end-to-end verification |
-| 3. Style profile synthesis | Onboarding finish | Wired — needs end-to-end verification |
-| 4. Post generation | Dashboard Generate / Surprise Me | Wired — needs end-to-end verification |
-| 4a. Regenerate | Dashboard Regenerate | Wired — needs end-to-end verification |
-| 5. Style profile update | On finalize | **Not built** |
+| 1. Background inference | Onboarding step 2 | **Verified** — quality tuning deferred |
+| 2. Style sample generation | Onboarding step 4 | **Verified** — quality tuning deferred |
+| 3. Style profile synthesis | Onboarding finish | **Verified** — quality tuning deferred |
+| 4. Post generation | Dashboard Generate / Surprise Me | **Verified** — quality tuning deferred |
+| 4a. Regenerate | Dashboard Regenerate | **Verified** — quality tuning deferred |
+| 5. Style profile update | On finalize | **Built** — needs manual E2E verify |
 
 ---
 
 ## Known Risks & Open Items
 
-1. **End-to-end LLM testing not confirmed** — Calls 1–4a are wired but not fully verified against the live OpenRouter API in a complete user flow.
-2. **`minimax/minimax-m3` reasoning tokens** — This model spends part of its token budget on hidden reasoning before producing visible content. Token budgets were raised and `reasoning.effort: "none"` was set, but Call 2 (5 JSON paragraphs) and Call 4/4a should be watched for truncation.
+1. **Output quality not yet tuned** — Calls 1–4a work functionally but prompts/model choice will be iterated after Group 3 (learning loop must exist first).
+2. **`minimax/minimax-m3` reasoning tokens** — Token budgets were raised and `reasoning.effort: "none"` was set; no truncation observed in E2E testing. Revisit if quality tuning pushes longer outputs.
 3. **Dual env var setup** — OpenRouter credentials must be set in both `.env.local` (Next.js/CLI) and Convex deployment env (`npx convex env set`). Convex does not read `.env.local`.
 4. **Stale context doc** — `.context/db-schema.md` lags behind `progress.md` on post functions; `convex/schema.ts` is the source of truth for schema.
 
@@ -268,9 +268,10 @@ npm run convex:dev   # Deploy Convex functions (required after any convex/ chang
 
 ## Next Steps (from `.context/todo.md`)
 
-1. **Test post generation end-to-end** — Generate, Surprise Me, Regenerate, Reject on `/dashboard`; verify `posts` table states.
-2. **Test onboarding end-to-end** — Full 4-step flow against live OpenRouter.
-3. **Build Group 3** — Inline editor, finalize + Call 5, copy button, post repository.
+### Now: Group 3 E2E + quality tuning
+
+1. **Manual E2E** — edit → finalize → copy → repository; no-edit finalize; regenerate then finalize
+2. **Quality tuning** — prompt pass (Calls 1–5), model evaluation, 5–6 real finalize cycles
 
 ---
 
