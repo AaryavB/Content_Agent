@@ -2,6 +2,8 @@
 // Mirrors ../../prompt-engineering.md 1:1 — edit both together.
 // Model comes from OPENROUTER_MODEL env var (see openrouter.ts).
 
+import { SLOP_INSTRUCTIONS } from "./slopFilter";
+
 // ---------------------------------------------------------------------------
 // Call 4 / 4a — Post Generation / Regenerate (plain text, ~100-250 words)
 // ---------------------------------------------------------------------------
@@ -12,16 +14,18 @@ export const CALL4_PARAMS = {
   reasoningEffort: "none",
 } as const;
 
-export const CALL4_SYSTEM = `You are an AI ghostwriter producing a LinkedIn post that reads as if the founder wrote it themselves. You will be given the founder's profile, professional background, a writing style profile (directives — follow precisely), a topic, and optionally the founder's own take on the topic.
+const CALL4_SYSTEM_BASE = `You are an AI ghostwriter producing a LinkedIn post that reads as if the founder wrote it themselves. You will be given the founder's profile, professional background, a writing style profile (directives — follow precisely), a topic, and optionally the founder's own take on the topic.
 
 Write a LinkedIn post with three parts, flowing as continuous prose (do not label the parts):
 1. Hook — first 1-2 lines, scroll-stopping. No generic openers like "In today's fast-paced world."
 2. Body — develops the idea using the founder's stated take if given. If no take is given, invent a specific, concrete angle grounded in the professional background (pick one: a hot take, a short story/anecdote, a lesson learned, a contrarian view).
-3. CTA — a short closing line inviting engagement (a question or specific invitation to share a view). Not a generic "Comment below."
+3. CTA — a substantive closing thought or topic-specific question. Not engagement bait (no "Thoughts?", "Agree?", "Comment below").
 
-Follow the writing style profile's directives on tone, sentence structure, vocabulary, and formatting. Length: roughly 100-250 words. Line breaks between short paragraphs (LinkedIn convention) — no bullet lists, no markdown. No hashtags unless they'd feel natural.
+Follow the writing style profile's directives on tone, sentence structure, vocabulary, and formatting. Length: roughly 100-250 words. Line breaks between short paragraphs (LinkedIn convention) — no bullet lists, no markdown. No hashtags by default.
 
 Output only the post text — no preamble, no part labels.`;
+
+export const CALL4_SYSTEM = `${CALL4_SYSTEM_BASE}\n\n${SLOP_INSTRUCTIONS}`;
 
 export type Call4UserParams = {
   name: string;
@@ -32,6 +36,7 @@ export type Call4UserParams = {
   topic: string;
   userInput?: string;
   regenerateNote?: string;
+  repairNote?: string;
 };
 
 export function call4User(params: Call4UserParams): string {
@@ -43,6 +48,10 @@ export function call4User(params: Call4UserParams): string {
     ? `\nRevision guidance from the founder: ${params.regenerateNote.trim()}. Apply this while keeping the same topic and underlying input.`
     : "";
 
+  const repairBlock = params.repairNote?.trim()
+    ? `\nYour previous draft used these banned patterns: ${params.repairNote.trim()}. Rewrite without any of them, keeping the same topic and take.`
+    : "";
+
   return `Founder profile: ${params.name}, ${params.role} at ${params.organization}.
 Professional background: ${params.professionalBackground}
 
@@ -50,7 +59,7 @@ Writing style profile:
 ${params.styleProfileText}
 
 Topic: ${params.topic}
-${takeLine}${regenerateBlock}
+${takeLine}${regenerateBlock}${repairBlock}
 
 Write the LinkedIn post now.`;
 }

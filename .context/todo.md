@@ -2,17 +2,13 @@
 
 Last updated: 2026-07-22
 
-## Next up (highest priority): Anti-slop output layer
+## Next up: P1 anti-slop follow-up
 
-Full spec: [`anti-slop-spec.md`](../anti-slop-spec.md) — read it before starting. Summary: generated posts still read as AI-written (em dashes, "it's not X it's Y", buzzwords, engagement-bait CTAs). Build a prevent → detect → repair layer:
+From [`anti-slop-spec.md`](../anti-slop-spec.md) §9 — not needed for first pass:
 
-1. New `convex/lib/slopFilter.ts` — `SLOP_INSTRUCTIONS` constant, `BANNED_PATTERNS` regex list, `lintSlop()`, `scrubHardTokens()`, `describeViolations()`.
-2. Append `SLOP_INSTRUCTIONS` to `CALL4_SYSTEM` in `postPrompts.ts` (primary fix).
-3. Wire detect+repair into `generatePost` and `regeneratePostAction` in `postActions.ts` — lint the draft, one silent regenerate with violations fed back if it fails, then `scrubHardTokens` as last resort.
-4. Fix the Call 2 "flashy" and "preachy" voice definitions — they currently instruct hype/moralizing language, which is slop by design (§6 of the spec).
-5. Keep `prompt-engineering.md` in sync with any prompt changes.
-
-P1/P2 (telemetry, Calls 3/5 propagation, config-driven blocklist) are in the spec — not needed for first pass.
+1. Append anti-slop rules to Call 3 (`CALL3_SYSTEM`) and Call 5 (`CALL5_SYSTEM`).
+2. Add optional `slopViolationCount` field on `posts` at generation time + Convex query for zero-edit finalize rate.
+3. P2: config-driven blocklist, Tier-2 heuristics, optional humanize pass.
 
 ## Then: Production verify + quality tuning
 
@@ -38,6 +34,7 @@ P1/P2 (telemetry, Calls 3/5 propagation, config-driven blocklist) are in the spe
 
 ## Done
 
+- ~~Anti-slop output layer (P0)~~ — [`convex/lib/slopFilter.ts`](../convex/lib/slopFilter.ts) (`SLOP_INSTRUCTIONS`, `lintSlop`, `scrubHardTokens`); `CALL4_SYSTEM` hardened + repair note; `generateCleanDraft` in `postActions.ts` (1 silent retry, then scrub); Call 2 flashy/preachy voice definitions fixed. Sanity script: `scripts/verify-slop.mjs`. Deploy Convex after pull: `npx convex dev`.
 - ~~Build Group 3 — backend~~ — `getFinalizedPosts`, `finalizePost`, `finalizePostAction` (Call 5)
 - ~~Build Group 3 — dashboard UI~~ — Edit, Finalize, Copy, My Posts repository
 - ~~Test onboarding end-to-end (Calls 1–3)~~ — verified 2026-07-17

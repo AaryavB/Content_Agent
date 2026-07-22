@@ -1,8 +1,10 @@
 # Progress
 
-Last updated: 2026-07-20 (contextual navigation UX)
+Last updated: 2026-07-22 (anti-slop P0)
 
 ## Done
+
+- **Anti-slop output layer (P0)** — prevent → detect → repair on post generation. [`convex/lib/slopFilter.ts`](../convex/lib/slopFilter.ts): `SLOP_INSTRUCTIONS`, Tier-1 `BANNED_PATTERNS`, `lintSlop()`, `describeViolations()`, `scrubHardTokens()`. [`convex/lib/postPrompts.ts`](../convex/lib/postPrompts.ts): `CALL4_SYSTEM` appends hard rules; CTA/hashtag guidance aligned; `repairNote` for silent retry. [`convex/postActions.ts`](../convex/postActions.ts): `generateCleanDraft()` — lint → one repair call at temp 0.65 → deterministic scrub; used by `generatePost` and `regeneratePostAction`. `finalizePostAction` unchanged (linter never runs on founder edits). Call 2 flashy/preachy voices de-slopped in [`convex/lib/onboardingPrompts.ts`](../convex/lib/onboardingPrompts.ts). Local sanity: `node --experimental-strip-types scripts/verify-slop.mjs`.
 
 - **Contextual navigation UX** — sidebar in [components/AppLayout.tsx](../components/AppLayout.tsx) now shows logo, app-defined back/forward arrows ([components/ui/NavigationControls.tsx](../components/ui/NavigationControls.tsx)), and a contextual **Profiles** link only when not on `/`. Static Dashboard/Onboarding links removed. App navigation stack in [lib/appNavigation.ts](../lib/appNavigation.ts) + [components/AppNavigationProvider.tsx](../components/AppNavigationProvider.tsx): route and onboarding-step entries, forward arrow hidden when unavailable, `completeTo` clears onboarding history on finish. Pathname sync reseeds stack on external navigation only (fixes stale stack after link/browser nav). Dashboard shows active profile name via [components/dashboard/DashboardPageHeader.tsx](../components/dashboard/DashboardPageHeader.tsx). Custom topic label renamed to **Other**.
 
@@ -49,7 +51,8 @@ Last updated: 2026-07-20 (contextual navigation UX)
 
 ## Deferred
 
-- **LLM output quality tuning** — prompt iteration, model comparison, real founder usage cycles. Learning loop is live.
+- **Anti-slop P1** — Call 3/5 prompt propagation, `slopViolationCount` telemetry, zero-edit rate query (see [anti-slop-spec.md](../anti-slop-spec.md)).
+- **LLM output quality tuning** — live dashboard generation review, model comparison, real founder usage cycles. Learning loop is live.
 
 ## Git state
 

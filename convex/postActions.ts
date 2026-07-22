@@ -8,11 +8,59 @@ import {
   CALL4_SYSTEM,
   CALL5_PARAMS,
   CALL5_SYSTEM,
+  Call4UserParams,
   call4User,
   call5User,
   parseCall5Result,
 } from "./lib/postPrompts";
 import { truncateToWords } from "./lib/onboarding";
+import {
+  describeViolations,
+  lintSlop,
+  scrubHardTokens,
+} from "./lib/slopFilter";
+
+const CALL4_REPAIR_PARAMS = {
+  ...CALL4_PARAMS,
+  temperature: 0.65,
+} as const;
+
+async function generateCleanDraft(
+  call4Params: Call4UserParams,
+): Promise<string> {
+  let draft = (
+    await chatCompletion({
+      system: CALL4_SYSTEM,
+      user: call4User(call4Params),
+      ...CALL4_PARAMS,
+    })
+  ).trim();
+
+  let violations = lintSlop(draft);
+  if (violations.length > 0) {
+    draft = (
+      await chatCompletion({
+        system: CALL4_SYSTEM,
+        user: call4User({
+          ...call4Params,
+          repairNote: describeViolations(violations),
+        }),
+        ...CALL4_REPAIR_PARAMS,
+      })
+    ).trim();
+    violations = lintSlop(draft);
+  }
+
+  if (violations.length > 0) {
+    console.log(
+      "Anti-slop: surviving violations after repair",
+      JSON.stringify(violations),
+    );
+    draft = scrubHardTokens(draft);
+  }
+
+  return draft;
+}
 
 export const generatePost = action({
   args: {
@@ -46,21 +94,15 @@ export const generatePost = action({
       throw new Error("Professional background is missing. Complete onboarding first.");
     }
 
-    const generatedContent = (
-      await chatCompletion({
-        system: CALL4_SYSTEM,
-        user: call4User({
-          name: user.name,
-          role: user.role,
-          organization: user.organization,
-          professionalBackground: user.professionalBackground,
-          styleProfileText: styleProfile.profileText,
-          topic,
-          userInput: args.userInput,
-        }),
-        ...CALL4_PARAMS,
-      })
-    ).trim();
+    const generatedContent = await generateCleanDraft({
+      name: user.name,
+      role: user.role,
+      organization: user.organization,
+      professionalBackground: user.professionalBackground,
+      styleProfileText: styleProfile.profileText,
+      topic,
+      userInput: args.userInput,
+    });
 
     if (!generatedContent) {
       throw new Error("Post generation returned empty content.");
@@ -112,22 +154,16 @@ export const regeneratePostAction = action({
       throw new Error("Professional background is missing. Complete onboarding first.");
     }
 
-    const generatedContent = (
-      await chatCompletion({
-        system: CALL4_SYSTEM,
-        user: call4User({
-          name: user.name,
-          role: user.role,
-          organization: user.organization,
-          professionalBackground: user.professionalBackground,
-          styleProfileText: styleProfile.profileText,
-          topic: post.topic,
-          userInput: post.userInput,
-          regenerateNote: args.regenerateNote,
-        }),
-        ...CALL4_PARAMS,
-      })
-    ).trim();
+    const generatedContent = await generateCleanDraft({
+      name: user.name,
+      role: user.role,
+      organization: user.organization,
+      professionalBackground: user.professionalBackground,
+      styleProfileText: styleProfile.profileText,
+      topic: post.topic,
+      userInput: post.userInput,
+      regenerateNote: args.regenerateNote,
+    });
 
     if (!generatedContent) {
       throw new Error("Post regeneration returned empty content.");
