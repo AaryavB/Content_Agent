@@ -1,5 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { CardHeader } from "@/components/ui/Card";
+import { Field } from "@/components/ui/Field";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { TOPIC_SUGGESTIONS } from "@/lib/topicSuggestions";
+
 type StepTopicsProps = {
   topics: string[];
   isSubmitting: boolean;
@@ -12,6 +21,10 @@ function countFilledTopics(topics: string[]): number {
   return topics.filter((topic) => topic.trim().length > 0).length;
 }
 
+function normalizeTopic(topic: string): string {
+  return topic.trim().toLowerCase();
+}
+
 export function StepTopics({
   topics,
   isSubmitting,
@@ -19,51 +32,78 @@ export function StepTopics({
   onTopicChange,
   onContinue,
 }: StepTopicsProps) {
+  const [suggestionValue, setSuggestionValue] = useState("");
   const filledCount = countFilledTopics(topics);
   const canContinue = filledCount >= 3 && filledCount <= 4 && !isSubmitting;
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">Topics</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          What topics do you usually write or think about? Add 3-4.
-        </p>
-      </div>
+  const usedTopics = new Set(
+    topics.map((topic) => normalizeTopic(topic)).filter(Boolean),
+  );
 
-      <div className="space-y-3">
+  const availableSuggestions = TOPIC_SUGGESTIONS.filter(
+    (suggestion) => !usedTopics.has(normalizeTopic(suggestion)),
+  );
+
+  function handleSuggestionSelect(value: string) {
+    if (!value) {
+      return;
+    }
+
+    const emptyIndex = topics.findIndex((topic) => topic.trim().length === 0);
+    if (emptyIndex === -1) {
+      setSuggestionValue("");
+      return;
+    }
+
+    onTopicChange(emptyIndex, value);
+    setSuggestionValue("");
+  }
+
+  return (
+    <div className="space-y-8">
+      <CardHeader
+        title="Topics"
+        description="What topics do you usually write or think about? Add 3–4."
+      />
+
+      {availableSuggestions.length > 0 ? (
+        <Field
+          label="Add from suggestions"
+          hint="Pick a suggestion to fill the next empty topic slot."
+        >
+          <Select
+            value={suggestionValue}
+            onChange={(event) => handleSuggestionSelect(event.target.value)}
+            disabled={isSubmitting || filledCount >= 4}
+            placeholder="Choose a topic"
+            options={availableSuggestions.map((suggestion) => ({
+              value: suggestion,
+              label: suggestion,
+            }))}
+          />
+        </Field>
+      ) : null}
+
+      <div className="space-y-4">
         {topics.map((topic, index) => (
-          <label key={index} className="block space-y-1.5">
-            <span className="text-sm font-medium text-zinc-700">
-              Topic {index + 1}
-            </span>
-            <input
+          <Field key={index} label={`Topic ${index + 1}`}>
+            <Input
               type="text"
               value={topic}
               onChange={(event) => onTopicChange(index, event.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2"
               placeholder="e.g. Startup building"
             />
-          </label>
+          </Field>
         ))}
       </div>
 
-      <p className="text-sm text-zinc-500">{filledCount} of 3-4 topics added</p>
+      <p className="text-sm text-muted">{filledCount} of 3–4 topics added</p>
 
-      {error ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Alert>{error}</Alert> : null}
 
-      <button
-        type="button"
-        onClick={onContinue}
-        disabled={!canContinue}
-        className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
-      >
+      <Button onClick={onContinue} disabled={!canContinue}>
         {isSubmitting ? "Saving topics..." : "Continue"}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -47,8 +47,8 @@ export const CALL2_SYSTEM = `You are a versatile LinkedIn ghostwriter. Given a s
 
 1. contrarian — challenges the conventional/obvious take; defensible but unpopular stance; confident, slightly combative tone.
 2. humble — modest, credits others or luck, downplays personal authority, soft hedging language.
-3. flashy — bold claims, big numbers/superlatives, high-energy hype language, short punchy sentences.
-4. preachy — didactic and moralizing; frames the idea as a lesson the reader needs; imperative language ("you need to...", "stop doing...").
+3. flashy — bold, high-conviction, punchy; strong claims stated plainly, without superlatives, invented big numbers, or hype words.
+4. preachy — instructive and opinionated; teaches a clear point of view, without moralizing, lecturing, or "you need to stop…" commands.
 5. conversational — casual, first-person, like talking to a friend over coffee; contractions, rhetorical questions, informal punctuation.
 
 Each sample: ONE paragraph (3-5 sentences), expresses the same underlying idea about the topic, and clearly sounds different from the other four.

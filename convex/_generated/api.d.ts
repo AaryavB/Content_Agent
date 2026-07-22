@@ -12,6 +12,7 @@ import type * as lib_onboarding from "../lib/onboarding.js";
 import type * as lib_onboardingPrompts from "../lib/onboardingPrompts.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
 import type * as lib_postPrompts from "../lib/postPrompts.js";
+import type * as lib_slopFilter from "../lib/slopFilter.js";
 import type * as onboardingActions from "../onboardingActions.js";
 import type * as postActions from "../postActions.js";
 import type * as posts from "../posts.js";
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   "lib/onboardingPrompts": typeof lib_onboardingPrompts;
   "lib/openrouter": typeof lib_openrouter;
   "lib/postPrompts": typeof lib_postPrompts;
+  "lib/slopFilter": typeof lib_slopFilter;
   onboardingActions: typeof onboardingActions;
   postActions: typeof postActions;
   posts: typeof posts;

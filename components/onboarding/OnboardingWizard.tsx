@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { useAppNavigation } from "@/components/AppNavigationProvider";
 import { getResumeStep } from "@/lib/onboardingResume";
 import {
   clearStoredUserId,
@@ -15,15 +15,18 @@ import { StepLinkedInPaste } from "@/components/onboarding/StepLinkedInPaste";
 import { StepQuickProfile } from "@/components/onboarding/StepQuickProfile";
 import { StepStyleSelection } from "@/components/onboarding/StepStyleSelection";
 import { StepTopics } from "@/components/onboarding/StepTopics";
-
-type OnboardingStep = 1 | 2 | 3 | 4;
+import { Card } from "@/components/ui/Card";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { StepIndicator } from "@/components/ui/StepIndicator";
+import type { OnboardingStep } from "@/lib/appNavigation";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
 
 export function OnboardingWizard() {
-  const router = useRouter();
+  const { push, replace, completeTo, registerOnboardingNavigator } =
+    useAppNavigation();
 
   const createUser = useMutation(api.users.createUser);
   const saveBackgroundInput = useMutation(api.users.saveBackgroundInput);
@@ -39,6 +42,8 @@ export function OnboardingWizard() {
   const [hasCheckedSession, setHasCheckedSession] = useState(false);
   const [step, setStep] = useState<OnboardingStep>(1);
   const [userId, setUserId] = useState<Id<"users"> | null>(null);
+  const hasSyncedResumeNavRef = useRef(false);
+  const hasCompletedRedirectRef = useRef(false);
 
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -52,7 +57,14 @@ export function OnboardingWizard() {
   useEffect(() => {
     setStoredUserIdState(getStoredUserId());
     setHasCheckedSession(true);
+    hasSyncedResumeNavRef.current = false;
+    hasCompletedRedirectRef.current = false;
   }, []);
+
+  useEffect(() => {
+    registerOnboardingNavigator({ setStep });
+    return () => registerOnboardingNavigator(null);
+  }, [registerOnboardingNavigator]);
 
   const user = useQuery(
     api.users.getUser,
@@ -77,13 +89,17 @@ export function OnboardingWizard() {
       setStoredUserIdState(null);
       setUserId(null);
       setStep(1);
+      hasSyncedResumeNavRef.current = false;
       return;
     }
 
     const resumeStep = getResumeStep(user, styleProfile !== null);
 
     if (resumeStep === "complete") {
-      router.replace("/dashboard");
+      if (!hasCompletedRedirectRef.current) {
+        hasCompletedRedirectRef.current = true;
+        completeTo({ kind: "route", href: "/dashboard" });
+      }
       return;
     }
 
@@ -101,7 +117,19 @@ export function OnboardingWizard() {
     }
 
     setStep(resumeStep);
-  }, [hasCheckedSession, storedUserId, user, styleProfile, router]);
+
+    if (!hasSyncedResumeNavRef.current) {
+      hasSyncedResumeNavRef.current = true;
+      replace({ kind: "onboarding-step", step: resumeStep });
+    }
+  }, [
+    hasCheckedSession,
+    storedUserId,
+    user,
+    styleProfile,
+    completeTo,
+    replace,
+  ]);
 
   async function handleStep1Continue() {
     setIsSubmitting(true);
@@ -112,7 +140,7 @@ export function OnboardingWizard() {
       setStoredUserId(newUserId);
       setStoredUserIdState(newUserId);
       setUserId(newUserId);
-      setStep(2);
+      push({ kind: "onboarding-step", step: 2 });
     } catch (error) {
       setStepError(getErrorMessage(error));
     } finally {
@@ -132,7 +160,7 @@ export function OnboardingWizard() {
     try {
       await saveBackgroundInput({ userId, linkedinPaste });
       await inferProfessionalBackground({ userId, linkedinPaste });
-      setStep(3);
+      push({ kind: "onboarding-step", step: 3 });
     } catch (error) {
       setStepError(getErrorMessage(error));
     } finally {
@@ -155,7 +183,7 @@ export function OnboardingWizard() {
         .filter((topic) => topic.length > 0);
 
       await updateTopics({ userId, topics: filledTopics });
-      setStep(4);
+      push({ kind: "onboarding-step", step: 4 });
     } catch (error) {
       setStepError(getErrorMessage(error));
     } finally {
@@ -184,7 +212,7 @@ export function OnboardingWizard() {
         sampleWritingWeight: payload.sampleWritingWeight,
       });
 
-      router.push("/dashboard");
+      completeTo({ kind: "route", href: "/dashboard" });
     } catch (error) {
       setStepError(getErrorMessage(error));
     } finally {
@@ -203,28 +231,14 @@ export function OnboardingWizard() {
     (user === undefined || styleProfile === undefined);
 
   if (!hasCheckedSession || isResuming) {
-    return (
-      <div className="flex min-h-[320px] items-center justify-center">
-        <p className="text-sm text-zinc-500">Loading onboarding...</p>
-      </div>
-    );
+    return <LoadingState message="Loading onboarding..." />;
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <div className="mb-8">
-        <p className="text-sm font-medium text-zinc-500">
-          Step {step} of 4
-        </p>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-200">
-          <div
-            className="h-full rounded-full bg-zinc-900 transition-all duration-300"
-            style={{ width: `${(step / 4) * 100}%` }}
-          />
-        </div>
-      </div>
+    <div className="w-full">
+      <StepIndicator currentStep={step} totalSteps={4} />
 
-      <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+      <Card>
         {step === 1 ? (
           <StepQuickProfile
             name={name}
@@ -273,7 +287,7 @@ export function OnboardingWizard() {
             onFinish={handleStep4Finish}
           />
         ) : null}
-      </div>
+      </Card>
     </div>
   );
 }

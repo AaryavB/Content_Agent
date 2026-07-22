@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { useAppNavigation } from "@/components/AppNavigationProvider";
 import { getStoredUserId } from "@/lib/onboardingSession";
+import { CUSTOM_TOPIC_VALUE } from "@/lib/topics";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { Field } from "@/components/ui/Field";
+import { Input } from "@/components/ui/Input";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong.";
@@ -34,7 +43,7 @@ function previewContent(content: string, maxChars = 100): string {
 type DraftStatus = "draft" | "finalized";
 
 export function DashboardContent() {
-  const router = useRouter();
+  const { reset } = useAppNavigation();
   const generatePost = useAction(api.postActions.generatePost);
   const regeneratePostAction = useAction(api.postActions.regeneratePostAction);
   const finalizePostAction = useAction(api.postActions.finalizePostAction);
@@ -43,7 +52,8 @@ export function DashboardContent() {
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
   const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
-  const [topic, setTopic] = useState("");
+  const [topicSelection, setTopicSelection] = useState("");
+  const [customTopic, setCustomTopic] = useState("");
   const [userInput, setUserInput] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +97,7 @@ export function DashboardContent() {
     }
 
     if (!storedUserId) {
-      router.replace("/");
+      reset();
       return;
     }
 
@@ -96,9 +106,9 @@ export function DashboardContent() {
     }
 
     if (user === null || styleProfile === null) {
-      router.replace("/");
+      reset();
     }
-  }, [hasCheckedSession, storedUserId, user, styleProfile, router]);
+  }, [hasCheckedSession, storedUserId, user, styleProfile, reset]);
 
   const isLoading =
     !hasCheckedSession ||
@@ -106,7 +116,14 @@ export function DashboardContent() {
     user === undefined ||
     styleProfile === undefined;
 
-  const canGenerate = topic.trim().length > 0 && !isBusy;
+  function getResolvedTopic(): string {
+    if (topicSelection === CUSTOM_TOPIC_VALUE) {
+      return customTopic.trim();
+    }
+    return topicSelection.trim();
+  }
+
+  const canGenerate = getResolvedTopic().length > 0 && !isBusy;
   const canSurpriseMe =
     user !== undefined && user !== null && user.topics.length > 0 && !isBusy;
   const isDraft = draftStatus === "draft";
@@ -151,7 +168,7 @@ export function DashboardContent() {
     try {
       const result = await generatePost({
         userId: storedUserId as Id<"users">,
-        topic: topic.trim(),
+        topic: getResolvedTopic(),
         userInput: userInput.trim() || undefined,
         mode: "user-led",
       });
@@ -185,7 +202,8 @@ export function DashboardContent() {
       });
 
       resetDraftForNewGeneration();
-      setTopic(randomTopic);
+      setTopicSelection(randomTopic);
+      setCustomTopic("");
       setUserInput("");
       setPostId(result.postId);
       setGeneratedContent(result.generatedContent);
@@ -322,11 +340,7 @@ export function DashboardContent() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[320px] items-center justify-center">
-        <p className="text-sm text-zinc-500">Loading dashboard...</p>
-      </div>
-    );
+    return <LoadingState message="Loading dashboard..." />;
   }
 
   if (!user || !styleProfile) {
@@ -334,106 +348,107 @@ export function DashboardContent() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-8">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+    <div className="w-full space-y-6">
+      <Card>
         <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight">
-              Generate a post
-            </h2>
-            <p className="mt-1 text-sm text-zinc-600">
-              Enter a topic and your take. The agent writes in your style.
-            </p>
-          </div>
+          <CardHeader
+            title="Generate a post"
+            description="Choose a topic and add your take. The agent writes in your style."
+          />
 
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-zinc-700">Topic</span>
-            <input
-              type="text"
-              value={topic}
-              onChange={(event) => setTopic(event.target.value)}
+          <Field label="Topic">
+            <Select
+              value={topicSelection}
+              onChange={(event) => setTopicSelection(event.target.value)}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
-              placeholder="e.g. Startup building"
+              placeholder="Select a topic"
+              options={[
+                ...user.topics.map((userTopic) => ({
+                  value: userTopic,
+                  label: userTopic,
+                })),
+                {
+                  value: CUSTOM_TOPIC_VALUE,
+                  label: "Other",
+                },
+              ]}
             />
-          </label>
+          </Field>
 
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-zinc-700">
-              Your take (optional)
-            </span>
-            <textarea
+          {topicSelection === CUSTOM_TOPIC_VALUE ? (
+            <Field label="Your topic">
+              <Input
+                type="text"
+                value={customTopic}
+                onChange={(event) => setCustomTopic(event.target.value)}
+                disabled={isBusy}
+                placeholder="e.g. Remote work culture"
+              />
+            </Field>
+          ) : null}
+
+          <Field label="Your take (optional)">
+            <Textarea
               value={userInput}
               onChange={(event) => setUserInput(event.target.value)}
               rows={4}
               disabled={isBusy}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
               placeholder="What's your angle or opinion on this topic?"
             />
-          </label>
+          </Field>
 
-          <p className="text-sm text-zinc-500">
-            The agent gets better after 5-6 finalized posts. Keep reviewing and
+          <p className="text-sm text-muted">
+            The agent gets better after 5–6 finalized posts. Keep reviewing and
             editing.
           </p>
 
-          {error ? (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </p>
-          ) : null}
+          {error ? <Alert>{error}</Alert> : null}
 
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={!canGenerate}
-              className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <Button onClick={handleGenerate} disabled={!canGenerate}>
               {isBusy && isDraft ? "Generating..." : "Generate"}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="secondary"
               onClick={handleSurpriseMe}
               disabled={!canSurpriseMe}
-              className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Surprise Me
-            </button>
+            </Button>
           </div>
         </div>
-      </section>
+      </Card>
 
       {generatedContent ? (
-        <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <h2 className="text-xl font-semibold tracking-tight">
-            {draftStatus === "finalized" ? "Finalized post" : "Your draft"}
-          </h2>
-          <p className="mt-1 text-sm text-zinc-600">Topic: {topic.trim()}</p>
+        <Card>
+          <CardHeader
+            title={draftStatus === "finalized" ? "Finalized post" : "Your draft"}
+            description={`Topic: ${getResolvedTopic()}`}
+          />
 
           {draftStatus === "finalized" ? (
-            <p className="mt-2 text-sm font-medium text-green-700">
+            <Alert variant="success" className="mt-4">
               Post finalized
-            </p>
+            </Alert>
           ) : null}
 
           {profileUpdateWarning ? (
-            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Post finalized, but style profile couldn&apos;t be updated. Future
-              posts may not reflect your latest edits.
-            </p>
+            <Alert variant="warning" className="mt-4">
+              Post finalized, but style profile couldn&apos;t be updated.
+              Future posts may not reflect your latest edits.
+            </Alert>
           ) : null}
 
           {isEditing ? (
-            <textarea
+            <Textarea
               value={editDraft}
               onChange={(event) => setEditDraft(event.target.value)}
               rows={12}
               disabled={isBusy}
-              className="mt-4 w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm leading-relaxed text-zinc-800 outline-none ring-zinc-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
+              className="mt-6"
             />
           ) : (
-            <div className="mt-4 whitespace-pre-wrap rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-3 text-sm leading-relaxed text-zinc-800">
+            <div className="mt-6 whitespace-pre-wrap rounded-[12px] border border-border-subtle bg-surface-muted px-4 py-4 text-sm leading-relaxed text-foreground">
               {draftStatus === "finalized"
                 ? (finalContent ?? getDisplayContent())
                 : getDisplayContent()}
@@ -442,108 +457,94 @@ export function DashboardContent() {
 
           {draftStatus === "finalized" && finalContent ? (
             <div className="mt-6">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={() => handleCopy(finalContent, "draft-card")}
-                className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
               >
                 {copiedId === "draft-card" ? "Copied!" : "Copy"}
-              </button>
+              </Button>
             </div>
           ) : (
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-6">
               {isEditing ? (
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
+                  <Button
                     onClick={handleSaveEdits}
                     disabled={isBusy || !editDraft.trim()}
-                    className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Save Edits
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="secondary"
                     onClick={handleCancelEdit}
                     disabled={isBusy}
-                    className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={handleStartEdit}
                     disabled={!canEdit}
-                    className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleFinalize}
-                    disabled={!canFinalize}
-                    className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
+                  </Button>
+                  <Button onClick={handleFinalize} disabled={!canFinalize}>
                     {isBusy ? "Finalizing and learning..." : "Finalize"}
-                  </button>
+                  </Button>
                 </div>
               )}
 
               {!isEditing ? (
-                <>
-                  <label className="block space-y-1.5">
-                    <span className="text-sm font-medium text-zinc-700">
-                      Regenerate with guidance (optional)
-                    </span>
-                    <input
+                <div className="space-y-4 border-t border-border-subtle pt-6">
+                  <Field label="Regenerate with guidance (optional)">
+                    <Input
                       type="text"
                       value={regenerateNote}
-                      onChange={(event) => setRegenerateNote(event.target.value)}
+                      onChange={(event) =>
+                        setRegenerateNote(event.target.value)
+                      }
                       disabled={isBusy}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-zinc-50"
                       placeholder="e.g. make it more punchy"
                     />
-                  </label>
+                  </Field>
 
                   <div className="flex flex-wrap gap-3">
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
                       onClick={handleRegenerate}
                       disabled={!canRegenerate}
-                      className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isBusy ? "Regenerating..." : "Regenerate"}
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="danger"
                       onClick={handleReject}
                       disabled={!canReject}
-                      className="rounded-lg border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Reject
-                    </button>
+                    </Button>
                   </div>
-                </>
+                </div>
               ) : null}
             </div>
           )}
-        </section>
+        </Card>
       ) : null}
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <h2 className="text-xl font-semibold tracking-tight">My Posts</h2>
+      <Card>
+        <CardHeader title="My Posts" />
 
         {finalizedPosts === undefined ? (
-          <p className="mt-4 text-sm text-zinc-500">Loading posts...</p>
+          <p className="mt-6 text-sm text-muted">Loading posts...</p>
         ) : finalizedPosts.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">
+          <p className="mt-6 text-sm text-muted">
             No posts yet. Generate your first post above.
           </p>
         ) : (
-          <ul className="mt-4 space-y-4">
+          <ul className="mt-6 space-y-3">
             {finalizedPosts.map((post) => {
               const content = post.finalContent ?? "";
               const isExpanded = expandedRepoIds.has(post._id);
@@ -552,37 +553,37 @@ export function DashboardContent() {
               return (
                 <li
                   key={post._id}
-                  className="rounded-lg border border-zinc-100 bg-zinc-50 p-4"
+                  className="rounded-[12px] border border-border-subtle bg-surface-muted p-4"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium text-zinc-900">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">
                         {post.topic}
                       </p>
                       {post.finalizedAt ? (
-                        <p className="mt-0.5 text-xs text-zinc-500">
+                        <p className="mt-0.5 text-xs text-subtle">
                           {formatDate(post.finalizedAt)}
                         </p>
                       ) : null}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleCopy(content, copyId)}
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
                       >
                         {copiedId === copyId ? "Copied!" : "Copy"}
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => toggleRepoExpand(post._id)}
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50"
                       >
                         {isExpanded ? "Collapse" : "View Full"}
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700">
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted">
                     {isExpanded ? content : previewContent(content)}
                   </p>
                 </li>
@@ -590,7 +591,7 @@ export function DashboardContent() {
             })}
           </ul>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

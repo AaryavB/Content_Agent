@@ -2,11 +2,15 @@
 
 **Product:** AI Ghostwriter Agent
 
-**Purpose:** Implementation-level specifications for building the MVP. This document is designed to be handed to Cursor (or any AI coding agent) as build-session prompts. Each build group is self-contained.
+**Last updated:** 2026-07-17
+
+**Purpose:** Implementation-level specifications for the MVP. Originally designed as build-session prompts grouped into 3 self-contained build groups. All three groups are now **implemented**; this document reflects the shipped app and any intentional deviations from the original spec.
 
 **Product context:** See `PRD.md` for product overview, problem statement, MVP scope, data model summary, LLM call inventory, key constraints, and user stories.
 
-**Prompt note:** LLM prompt text is NOT included in this document. Prompts will be defined in a separate prompt engineering session. Each LLM call section below specifies inputs, outputs, storage, and prompt coverage (what the prompt should address), but not the actual prompt text.
+**Live build state:** See `.context/progress.md` for verification status and open items. `convex/schema.ts` and the codebase are the source of truth when this document and progress diverge.
+
+**Prompt note:** Prompt text lives in `convex/lib/onboardingPrompts.ts` (Calls 1–3) and `convex/lib/postPrompts.ts` (Calls 4, 4a, 5). Each LLM call section below still documents inputs, outputs, storage, and prompt coverage.
 
 ---
 
@@ -14,23 +18,53 @@
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Frontend | Next.js (App Router) | Most well-documented with Cursor. Student-friendly. |
-| Backend + DB | Convex | Schema, functions, real-time. All-in-one backend. |
-| Styling | Tailwind CSS | Standard with Next.js + Cursor. |
-| LLM Provider | TBD | Architecture should isolate LLM calls in Convex actions so provider can be swapped. |
-| LLM SDK | TBD | Will be decided in prompt engineering session. |
+| Frontend | Next.js 15 (App Router) + React 19 | `app/` routes, client components in `components/` |
+| Backend + DB | Convex | Schema, queries, mutations, actions. `convex/_generated/` committed for Netlify builds. |
+| Styling | Tailwind CSS 4 | Utility classes throughout UI components |
+| Language | TypeScript | Shared types between frontend and Convex |
+| LLM Provider | OpenRouter | OpenAI-compatible API via plain `fetch` in `convex/lib/openrouter.ts` |
+| LLM Model | `OPENROUTER_MODEL` env var | Set on Convex deployment (`npx convex env set`). Not hardcoded. |
+| LLM SDK | None | Default Convex V8 runtime — no `"use node"`, no provider SDK |
 
 **Architectural pattern:** LLM calls happen inside Convex actions (server-side functions). Each action follows the pattern: query needed data from Convex, call LLM, store result via mutation. Frontend calls actions, never calls the LLM directly.
 
+**Deployment:** Frontend on Netlify (`netlify.toml`, `master` branch). Convex backend on a separate deployment. `NEXT_PUBLIC_CONVEX_URL` on Netlify; `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` on Convex.
+
 ---
 
-# 2. Functional Requirements
+# 2. App Routes & Screens
 
-Functional requirements are grouped into 3 build groups. Each group is self-contained and can be handed to Cursor as a single session prompt. Each group specifies: Convex schema/functions, LLM call coverage (inputs/outputs/storage, not prompt text), screen specs, and data flow.
+| Route | Screen | Component | Status |
+|---|---|---|---|
+| `/` | Profile picker home | `components/HomeContent.tsx` | Built |
+| `/onboarding` | 4-step onboarding wizard | `components/onboarding/OnboardingWizard.tsx` | Built |
+| `/dashboard` | Post generation, draft actions, repository | `components/dashboard/DashboardContent.tsx` | Built |
+
+**Session:** Active `userId` is stored in `localStorage` via `lib/onboardingSession.ts` (with one-time migration from legacy `sessionStorage`). No authentication in MVP — profile picker lists all `users` rows.
+
+---
+
+# 3. Implementation Status
+
+| Build Group | Scope | Status |
+|---|---|---|
+| **Group 1** | Foundation + Onboarding (schema, Calls 1–3, profile picker, 4-step wizard) | **Built + verified** (E2E 2026-07-17) |
+| **Group 2** | Post Generation (dashboard, generate, surprise-me, regenerate, reject; Calls 4 & 4a) | **Built + verified** (E2E 2026-07-17) |
+| **Group 3** | Polish, Publish + Repository (edit, finalize, copy, history; Call 5) | **Built** — manual E2E walkthrough pending |
+
+**Deferred (post-MVP):** Output quality tuning (prompt/model iteration), authentication, SaaS productization.
+
+---
+
+# 4. Functional Requirements
+
+Functional requirements are grouped into 3 build groups. Each group specifies: Convex schema/functions, LLM call coverage, screen specs, and data flow.
 
 ---
 
 ## Build Group 1: Foundation + Onboarding
+
+**Status:** Built + verified. Implementation: `convex/schema.ts`, `convex/users.ts`, `convex/onboardingActions.ts`, `convex/lib/onboarding.ts`, `convex/lib/onboardingPrompts.ts`, `components/onboarding/`, `components/HomeContent.tsx`, `lib/onboardingSession.ts`, `lib/onboardingResume.ts`.
 
 ### 1.1 Convex Schema
 
@@ -126,8 +160,7 @@ export default defineSchema({
 | Stored in | `users.professionalBackground` |
 | Prompt coverage | Extract professional background, industry, key achievements, roles, notable context. Concise summary. Exclude irrelevant personal details. Max 150 words. |
 | Loading UX | Show spinner/processing state on step 2 while call runs |
-
-#### Call 2: Style Sample Generation
+| Implementation | `convex/onboardingActions.ts` → OpenRouter via `convex/lib/openrouter.ts` |
 
 | Property | Value |
 |---|---|
@@ -138,6 +171,7 @@ export default defineSchema({
 | Stored in | Nothing. Returned to frontend for display only. |
 | Prompt coverage | Generate 5 short one-paragraph posts on the given topic, same idea, in 5 distinct styles: contrarian, humble, flashy, preachy, conversational. Each post is one paragraph. |
 | Loading UX | Show skeleton cards or spinner while samples generate. Display 5 cards when ready. |
+| Implementation | `convex/onboardingActions.ts` → OpenRouter JSON response |
 
 #### Call 3: Style Profile Synthesis
 
@@ -149,13 +183,16 @@ export default defineSchema({
 | Output | `profileText` (string, max 200 words) |
 | Stored in | `styleProfiles` table (new doc) |
 | Prompt coverage | Synthesize selected styles + optional user writing into concise style profile. Cover: tone, sentence structure, vocabulary patterns, formatting habits, thinking patterns. Weight user writing at 75% if provided. Max 200 words. |
-| Loading UX | Show processing state on step 4. Redirect to dashboard on completion. |
+| Loading UX | Show processing state on step 4. Redirect to `/dashboard` on completion. |
+| Implementation | `convex/onboardingActions.ts` → OpenRouter via `convex/lib/openrouter.ts` |
 
 ### 1.4 Screen Spec: Home (Profile Picker)
 
 **Route:** `/`
 
-**Layout:** Profile list as the app entry point. No auth in MVP — all rows in `users` are visible to the operator.
+**Component:** `components/HomeContent.tsx`
+
+**Layout:** Profile list as the app entry point. Page title: "Content Agent". No auth in MVP — all rows in `users` are visible to the operator.
 
 | Element | Type | Behavior |
 |---|---|---|
@@ -172,7 +209,9 @@ export default defineSchema({
 
 **Route:** `/onboarding`
 
-**Layout:** Single page, 4 sequential steps. Progress indicator at top (Step 1 of 4, etc.). No skip buttons. Each step has a primary action button that advances to the next step.
+**Component:** `components/onboarding/OnboardingWizard.tsx` orchestrates step components: `StepQuickProfile`, `StepLinkedInPaste`, `StepTopics`, `StepStyleSelection`.
+
+**Layout:** Single page, 4 sequential steps. Progress bar at top ("Step N of 4" + fill bar). No skip buttons. Each step has a primary action button that advances to the next step. Loading state shown while resuming from stored session.
 
 #### Step 1: Quick Profile
 
@@ -183,7 +222,7 @@ export default defineSchema({
 | Organization | Text input | Required, non-empty | `users.organization` via `createUser` |
 | "Continue" button | Button | Disabled until all 3 fields filled | Calls `createUser` mutation, advances to step 2 |
 
-**Data flow:** User fills 3 fields, clicks Continue. Frontend calls `createUser({ name, role, organization })`. Returns `userId`. Store `userId` in client state (needed for remaining steps). Advance to step 2.
+**Data flow:** User fills 3 fields, clicks Continue. Frontend calls `createUser({ name, role, organization })`. Returns `userId`. Store `userId` in `localStorage` via `setStoredUserId` and in component state. Advance to step 2.
 
 #### Step 2: Professional Background
 
@@ -227,13 +266,17 @@ export default defineSchema({
 
 | Scenario | Handling |
 |---|---|
-| LLM call fails (any of calls 1, 2, 3) | Show error message with "Retry" button. Do not advance step. |
-| User refreshes mid-onboarding | `userId` is lost from client state. On mount, check if user has incomplete profile (empty `professionalBackground` or empty `topics` or no `styleProfile`). Resume from the first incomplete step. |
+| LLM call fails (any of calls 1, 2, 3) | Show inline error with message. Do not advance step. User can retry the step action. |
+| User refreshes mid-onboarding | `userId` persists in `localStorage`. On mount, `OnboardingWizard` loads stored ID, fetches user + style profile, and derives resume step via `getResumeStep()` in `lib/onboardingResume.ts`: step 2 if no `professionalBackground`, step 3 if no `topics`, step 4 if no style profile, redirect to `/dashboard` if complete. |
+| User opens `/onboarding` with completed profile | Redirect to `/dashboard` (not home). |
+| Invalid stored `userId` (user deleted) | Clear storage, restart at step 1. |
 | LinkedIn paste too short | Validation prevents submission (min 50 chars). Show inline error. |
 
 ---
 
 ## Build Group 2: Post Generation
+
+**Status:** Built + verified. Implementation: `convex/posts.ts`, `convex/postActions.ts`, `convex/lib/postPrompts.ts`, `components/dashboard/DashboardContent.tsx`.
 
 ### 2.1 Convex Functions
 
@@ -291,7 +334,14 @@ export default defineSchema({
 
 **Route:** `/dashboard`
 
-**Layout:** Two sections stacked vertically. Top section is the generation form. Bottom section is the post display and actions. Post repository is a separate tab or section below.
+**Component:** `components/dashboard/DashboardContent.tsx`
+
+**Layout:** Three sections stacked vertically on a single page:
+- **Section A:** Generation form (topic + optional take, Generate / Surprise Me)
+- **Section B:** Draft card (shown after generation; edit, finalize, regenerate, reject, copy when finalized)
+- **Section C:** "My Posts" repository (always visible below; finalized posts list)
+
+**Session guard:** On mount, read `userId` from `localStorage`. If missing, invalid user, or no style profile → redirect to `/` (profile picker). Does not redirect to `/onboarding` directly.
 
 #### Section A: Generation Form
 
@@ -300,7 +350,7 @@ export default defineSchema({
 | Topic input | Text input | Required for "Generate", hidden/disabled for "Surprise Me" | N/A |
 | Opinion/input textarea | Large textarea | Optional for "Generate", hidden for "Surprise Me" | N/A |
 | "Generate" button | Primary button | Disabled until topic entered | Calls `generatePost` action with mode "user-led" |
-| "Surprise Me" button | Secondary button | Always enabled (requires user to have topics) | Calls `generatePost` action with mode "surprise-me", random topic from `users.topics` |
+| "Surprise Me" button | Secondary button | Disabled when user has no topics or busy | Calls `generatePost` with mode `"surprise-me"`, random topic from `users.topics`. After success, fills the topic input with the chosen topic and clears opinion input. |
 | Expectation text | Static text | "The agent gets better after 5-6 finalized posts. Keep reviewing and editing." | N/A |
 
 **"Surprise Me" flow:** Frontend picks a random topic from the user's topic list (fetched via `getUser`). Calls `generatePost({ userId, topic: randomTopic, mode: "surprise-me" })`. No topic or opinion inputs needed from user.
@@ -311,11 +361,11 @@ export default defineSchema({
 |---|---|---|---|
 | Post content card | Card displaying `generatedContent` | After generation completes | N/A |
 | "Edit" button | Button | Always shown on draft posts | Toggles inline edit mode (Group 3) |
-| "Regenerate" button + comment input | Button + small text input | Always shown on draft posts | Calls `regeneratePostAction` with optional comment |
+| "Regenerate" button + comment input | Button + text input (always visible on draft) | Shown on draft posts when not in edit mode | Calls `regeneratePostAction` with optional comment from input |
 | "Reject" button | Destructive button | Always shown on draft posts | Calls `rejectPost` mutation, marks as rejected, clears post display |
 | "Finalize" button | Primary button | Shown on draft posts (also after edit) | Triggers finalize flow (Group 3) |
 
-**Regenerate interaction:** User clicks "Regenerate", optional comment input appears (or is always visible). User enters optional comment (e.g., "make it more punchy"). Clicks confirm. Frontend calls `regeneratePostAction({ postId, regenerateNote })`. Loading state. Post content card updates with new `generatedContent`.
+**Regenerate interaction:** Regenerate guidance input is always visible below draft actions (label: "Regenerate with guidance (optional)"). User enters optional comment (e.g., "make it more punchy"). Clicks Regenerate. Frontend calls `regeneratePostAction({ postId, regenerateNote })`. Loading state on button. Post content card updates with new `generatedContent`. Clears any saved edits.
 
 **Reject interaction:** User clicks "Reject". Confirmation prompt ("Reject this post? It will be saved but won't affect your style profile."). On confirm, calls `rejectPost({ postId })`. Post card clears. User can generate a new post.
 
@@ -354,14 +404,16 @@ export default defineSchema({
 
 | Scenario | Handling |
 |---|---|
-| LLM call fails (generate or regenerate) | Show error message with "Retry" button. Post is not created/updated. |
-| User has no style profile (onboarding incomplete) | Redirect to `/onboarding`. Dashboard mount checks for style profile. |
-| User has no topics (onboarding incomplete) | Redirect to `/onboarding`. |
+| LLM call fails (generate or regenerate) | Show inline error message. Post is not created/updated. |
+| No stored `userId` or invalid user | Redirect to `/` (profile picker). |
+| User has no style profile (onboarding incomplete) | Redirect to `/` (profile picker). User selects profile or resumes onboarding from home. |
 | "Surprise Me" but topics array is empty | Disable "Surprise Me" button. Should not happen if onboarding is complete. |
 
 ---
 
 ## Build Group 3: Polish, Publish + Repository
+
+**Status:** Built. Implementation: `convex/posts.ts` (`getFinalizedPosts`, `finalizePost`), `convex/postActions.ts` (`finalizePostAction`), `convex/lib/postPrompts.ts` (Call 5), inline editor + repository in `components/dashboard/DashboardContent.tsx`.
 
 ### 3.1 Convex Functions
 
@@ -375,13 +427,13 @@ export default defineSchema({
 
 | Function | Args | Returns | Purpose |
 |---|---|---|---|
-| `finalizePost` | `postId, finalContent, editsDiff` | void | Set `status` to "finalized", set `finalContent`, set `editsDiff`, set `finalizedAt` to current timestamp |
+| `finalizePost` | `postId, finalContent, editsDiff?` | void | Set `status` to `"finalized"`, set `finalContent`, optional `editsDiff`, set `finalizedAt` to current timestamp. Only draft posts. |
 
 #### Actions (LLM calls)
 
 | Function | Args | Returns | Purpose |
 |---|---|---|---|
-| `finalizePostAction` | `postId, finalContent` | `{ updatedProfileText }` | LLM Call 5. Queries post (for original `generatedContent`) + style profile. Computes edits diff internally. Calls LLM to update style profile. Stores final post via `finalizePost` mutation + updates style profile via `updateStyleProfile` mutation. Returns updated profile text. |
+| `finalizePostAction` | `postId, finalContent` | `{ updatedProfileText: string \| null, profileUpdateFailed: boolean }` | LLM Call 5 when user edited the draft. If `finalContent` equals `generatedContent` (no edits), skips Call 5 and finalizes directly. Otherwise: calls LLM for updated profile + edits diff, attempts `updateStyleProfile`, then `finalizePost`. Returns `profileUpdateFailed: true` if style profile mutation fails after a successful LLM call. |
 
 ### 3.2 LLM Call Coverage
 
@@ -389,95 +441,102 @@ export default defineSchema({
 
 | Property | Value |
 |---|---|
-| Triggered by | User clicking "Finalize" on a post |
+| Triggered by | User clicking "Finalize" on a draft post **when content was edited** |
 | Convex action | `finalizePostAction` |
 | Input | `postId`, `finalContent` (edited version) |
-| Context pulled by action | Post doc (`generatedContent` = original, `finalContent` = edited) + `styleProfiles` doc (current `profileText`) |
-| Internal computation | Action computes a simple diff/summary of changes between `generatedContent` and `finalContent`. This diff is passed to the LLM as context. |
-| Output | Updated `profileText` (string, max 200 words, not longer than previous version) |
-| Stored in | `posts.editsDiff` + `posts.finalContent` + `styleProfiles.profileText` (all updated) |
+| Context pulled by action | Post doc (`generatedContent` = original) + `styleProfiles` doc (current `profileText`) |
+| Skipped when | `finalContent.trim() === generatedContent` — no LLM call; post finalized with no `editsDiff`; style profile unchanged |
+| LLM output | `{ updatedProfileText, editsDiff }` — parsed via `parseCall5Result` in `convex/lib/postPrompts.ts` |
+| Output stored | `posts.editsDiff` + `posts.finalContent` + `styleProfiles.profileText` (when Call 5 runs and profile update succeeds) |
 | Prompt coverage | Compare original post with final edited post. Identify what the user changed and what that signals about preferences. Update existing style profile to reflect these signals. Max 200 words. Do not make longer than previous version. |
-| Loading UX | Show "Finalizing and learning..." state. On completion, show success confirmation. |
+| Loading UX | Button shows "Finalizing and learning..." while action runs. On completion, draft card shows "Post finalized" + Copy button. |
+| Degraded success | If `updateStyleProfile` fails after LLM succeeds, post is still finalized. UI shows amber warning: "Post finalized, but style profile couldn't be updated..." |
 
 ### 3.3 Screen Spec: Post Editor + Repository
 
-These are additions to the Dashboard screen from Group 2. No new route needed.
+These are part of the Dashboard screen (`/dashboard`). No separate route.
 
-#### Inline Editor (on Dashboard, Section B)
+#### Section B: Inline Editor (draft card)
 
 | Element | Type | When Shown | Action |
 |---|---|---|---|
-| Editable text area | Text area pre-filled with `generatedContent` | When user clicks "Edit" on a draft post | User edits inline |
-| "Save Edits" button | Button | In edit mode | Saves edits to local state, exits edit mode, shows updated content |
-| "Cancel" button | Button | In edit mode | Discards edits, exits edit mode, restores original content |
-| "Finalize" button | Primary button | After edit mode (or directly on draft) | Calls `finalizePostAction` |
+| Draft / finalized header | Section header | After generation | "Your draft" while draft; "Finalized post" + green success line after finalize |
+| Post content display | Pre-wrapped text block | Default view | Shows `editedContent` if saved, else `generatedContent` |
+| Editable textarea | Textarea pre-filled with display content | When user clicks "Edit" | User edits inline; Regenerate/Reject hidden while editing |
+| "Save Edits" button | Button | In edit mode | Saves trimmed edits to client state (`editedContent`), exits edit mode |
+| "Cancel" button | Button | In edit mode | Discards unsaved textarea changes, exits edit mode |
+| "Edit" + "Finalize" buttons | Buttons | Draft, not editing | Edit enters edit mode; Finalize calls `finalizePostAction` |
+| Profile-update warning | Amber banner | After finalize when `profileUpdateFailed` | Warns style profile was not updated |
+| "Copy" button | Button | After finalize | Copies `finalContent` to clipboard; shows "Copied!" for 2 seconds |
 
-**Edit interaction:** User clicks "Edit". Post content card transforms into a textarea pre-filled with `generatedContent`. User edits. Clicks "Save Edits" to confirm (content stored in frontend state as the edited version). Clicks "Finalize" to trigger the finalize flow.
+**Edit interaction:** User clicks "Edit". Draft card shows textarea. User edits. "Save Edits" stores edits in frontend state only (not persisted until finalize). "Cancel" reverts to last saved display content.
 
 **Finalize flow:**
-1. User clicks "Finalize"
-2. Frontend checks if content was edited. If yes, `finalContent` = edited version. If no, `finalContent` = `generatedContent`.
+1. User clicks "Finalize" (available without entering edit mode — uses `generatedContent` if no edits saved)
+2. Frontend sets `finalContent` = `editedContent ?? generatedContent`
 3. Frontend calls `finalizePostAction({ postId, finalContent })`
-4. Show "Finalizing and learning..." loading state
-5. Action computes edits diff, calls LLM to update style profile, stores everything
-6. On completion: show success state on post card. Reveal "Copy" button.
+4. Button shows "Finalizing and learning..." loading state
+5. On success: card switches to finalized state, Regenerate/Reject/Edit hidden, Copy revealed
+6. If `profileUpdateFailed`, show amber warning banner
+7. "My Posts" repository refreshes via `getFinalizedPosts` subscription
 
-#### Copy Button
-
-| Element | Type | When Shown | Action |
-|---|---|---|---|
-| "Copy" button | Button | After post is finalized | Copies `finalContent` to clipboard |
-
-**Copy interaction:** User clicks "Copy". `navigator.clipboard.writeText(finalContent)`. Show brief "Copied!" confirmation (2 seconds, then revert to "Copy").
-
-#### Post Repository (on Dashboard, Section C)
+#### Section C: Post Repository
 
 | Element | Type | Purpose |
 |---|---|---|
-| "My Posts" header | Section header | Below the generation area |
-| Post list | List of cards | Each card shows: topic, finalized date, content preview (first 100 chars), "Copy" button, "View Full" expand |
+| "My Posts" header | Section header | Always visible below generation + draft areas |
+| Post list | Cards from `getFinalizedPosts` | Each card: topic, finalized date, content preview (first 100 chars), Copy, View Full / Collapse |
 | Empty state | Static text | "No posts yet. Generate your first post above." |
-
-**Repository data flow:** On dashboard mount, call `getFinalizedPosts({ userId })`. Display list. Each card has a "Copy" button (same behavior as above). "View Full" expands the card to show full `finalContent`.
+| Loading state | Static text | "Loading posts..." while query pending |
 
 ### 3.4 Data Flow
 
-**Finalize:**
-1. User clicks "Finalize" on a draft post
-2. Frontend determines `finalContent` (edited or original)
-3. Frontend calls `finalizePostAction({ postId, finalContent })`
-4. Action queries post doc + style profile
-5. Action computes diff between `generatedContent` and `finalContent`
-6. Action calls LLM with: original post, final post, diff, current style profile
-7. LLM returns updated `profileText`
-8. Action calls `finalizePost({ postId, finalContent, editsDiff })` mutation
-9. Action calls `updateStyleProfile({ userId, profileText })` mutation
-10. Action returns `{ updatedProfileText }`
-11. Frontend shows success state + "Copy" button
-12. Post repository list refreshes (or appends the new finalized post)
+**Finalize (with edits):**
+1. User clicks "Finalize" on a draft post (optionally after Save Edits)
+2. Frontend determines `finalContent` = `editedContent ?? generatedContent`
+3. If `finalContent === generatedContent`, action skips Call 5 → `finalizePost` only → done
+4. Otherwise frontend calls `finalizePostAction({ postId, finalContent })`
+5. Action queries post doc + style profile
+6. Action calls OpenRouter (Call 5) with original post, final post, current profile
+7. LLM returns `updatedProfileText` + `editsDiff`
+8. Action calls `updateStyleProfile` (may fail gracefully)
+9. Action calls `finalizePost({ postId, finalContent, editsDiff })`
+10. Frontend shows finalized state + Copy; repository list updates
+
+**Finalize (no edits):**
+1. User clicks "Finalize" without editing
+2. `finalContent` equals `generatedContent` — action finalizes immediately, no Call 5, no `editsDiff`
 
 **Copy:**
-1. User clicks "Copy" on a finalized post
-2. Frontend calls `navigator.clipboard.writeText(finalContent)`
-3. Show "Copied!" confirmation
+1. User clicks "Copy" on finalized draft card or repository card
+2. `navigator.clipboard.writeText(finalContent)`
+3. Button shows "Copied!" for 2 seconds; on failure, inline error "Copy failed, please select and copy manually."
 
 ### 3.5 Error Handling (Group 3)
 
 | Scenario | Handling |
 |---|---|
-| LLM call 5 fails (style profile update) | Post is still finalized (save `finalContent` and `editsDiff`). Style profile update fails gracefully. Show warning: "Post finalized, but style profile couldn't be updated. Future posts may not reflect your latest edits." |
-| Copy to clipboard fails | Fallback: select text manually. Show "Copy failed, please select and copy manually." |
-| Finalize on already-finalized post | Disable "Finalize" button on finalized posts. Should not happen. |
+| LLM call 5 fails | Action throws; post not finalized. Inline error on dashboard. |
+| Style profile mutation fails after successful Call 5 | Post still finalized with `editsDiff`. `profileUpdateFailed: true` returned. Amber warning in UI. |
+| Copy to clipboard fails | Inline error: "Copy failed, please select and copy manually." |
+| Finalize on already-finalized post | Action throws "Only draft posts can be finalized." Should not happen — UI disables actions on finalized card. |
+| Finalize with empty content | Frontend and action both guard against empty `finalContent`. |
 
 ---
 
-# 3. Remaining: Prompt Engineering
+# 5. Prompt Engineering
 
-The following will be defined in a separate session:
+**Status:** Implemented in code. Ongoing quality tuning deferred.
 
-- Actual LLM prompt text for all 5 calls (1, 2, 3, 4, 4a, 5)
-- System prompts vs user prompts
-- Token budget per call
-- Output parsing strategy (structured output vs free text)
-- LLM provider selection (OpenAI, Anthropic, etc.)
-- Model selection per call (e.g., cheaper model for background inference, stronger model for post generation)
+| Call | Prompt module | Parser / params |
+|---|---|---|
+| 1. Background inference | `convex/lib/onboardingPrompts.ts` | Plain text via `chatCompletion` |
+| 2. Style samples | `convex/lib/onboardingPrompts.ts` | JSON via `chatCompletionJson` |
+| 3. Style profile synthesis | `convex/lib/onboardingPrompts.ts` | Plain text via `chatCompletion` |
+| 4. Post generation | `convex/lib/postPrompts.ts` | Plain text via `chatCompletion` |
+| 4a. Regenerate | `convex/lib/postPrompts.ts` | Plain text via `chatCompletion` |
+| 5. Style profile update | `convex/lib/postPrompts.ts` | JSON via `parseCall5Result` |
+
+**OpenRouter client:** `convex/lib/openrouter.ts` — `chatCompletion`, `chatCompletionJson` (fence-strip + single retry on parse failure). Model and API key from Convex deployment env vars.
+
+**Remaining tuning (not blocking MVP):** Prompt iteration, model comparison, token budget review, real founder usage cycles for the learning loop.

@@ -1,5 +1,11 @@
 "use client";
 
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { CardHeader } from "@/components/ui/Card";
+import { Field } from "@/components/ui/Field";
+import { Textarea } from "@/components/ui/Textarea";
+
 type StepLinkedInPasteProps = {
   linkedinPaste: string;
   isSubmitting: boolean;
@@ -22,58 +28,44 @@ export function StepLinkedInPaste({
   const canContinue = trimmedLength >= MIN_PASTE_LENGTH && !isSubmitting;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">
-          Professional background
-        </h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Copy your LinkedIn About or Experience section and paste it here.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <CardHeader
+        title="Professional background"
+        description="Copy your LinkedIn About or Experience section and paste it here."
+      />
 
-      <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-zinc-700">LinkedIn paste</span>
-        <textarea
+      <Field label="LinkedIn paste">
+        <Textarea
           value={linkedinPaste}
           onChange={(event) => onLinkedinPasteChange(event.target.value)}
           rows={8}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2"
           placeholder="Paste your LinkedIn About or Experience section..."
         />
-      </label>
+      </Field>
 
       {isTooShort ? (
-        <p className="text-sm text-amber-700">
+        <Alert variant="warning">
           Please paste at least {MIN_PASTE_LENGTH} characters.
-        </p>
+        </Alert>
       ) : null}
 
       {error ? (
-        <div className="space-y-3">
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
-          <button
-            type="button"
+        <div className="space-y-4">
+          <Alert>{error}</Alert>
+          <Button
+            variant="secondary"
             onClick={onContinue}
             disabled={!canContinue}
-            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Retry
-          </button>
+          </Button>
         </div>
       ) : null}
 
       {!error ? (
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={!canContinue}
-          className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
-        >
+        <Button onClick={onContinue} disabled={!canContinue}>
           {isSubmitting ? "Processing background..." : "Continue"}
-        </button>
+        </Button>
       ) : null}
     </div>
   );
