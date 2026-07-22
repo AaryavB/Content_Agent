@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { CardHeader } from "@/components/ui/Card";
+import { Field } from "@/components/ui/Field";
+import { Textarea } from "@/components/ui/Textarea";
+import { cn } from "@/lib/cn";
 
 type StyleSample = {
   style: string;
@@ -111,39 +117,38 @@ export function StepStyleSelection({
     (!hasOwnWriting || selectedStyles.length === 1);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">Style selection</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Here are 5 writing styles on{" "}
-          <span className="font-medium text-zinc-800">{firstTopic}</span>. Pick
-          up to {hasOwnWriting ? "1" : "2"} that feel most like you.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <CardHeader
+        title="Style selection"
+        description={
+          <>
+            Here are 5 writing styles on{" "}
+            <span className="font-medium text-foreground">{firstTopic}</span>.
+            Pick up to {hasOwnWriting ? "1" : "2"} that feel most like you.
+          </>
+        }
+      />
 
       {isLoadingSamples ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 5 }).map((_, index) => (
             <div
               key={index}
-              className="h-32 animate-pulse rounded-lg border border-zinc-200 bg-zinc-100"
+              className="h-32 animate-pulse rounded-[12px] border border-border bg-surface-muted"
             />
           ))}
         </div>
       ) : null}
 
       {loadError ? (
-        <div className="space-y-3">
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {loadError}
-          </p>
-          <button
-            type="button"
+        <div className="space-y-4">
+          <Alert>{loadError}</Alert>
+          <Button
+            variant="secondary"
             onClick={() => window.location.reload()}
-            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
           >
             Retry
-          </button>
+          </Button>
         </div>
       ) : null}
 
@@ -157,16 +162,17 @@ export function StepStyleSelection({
                 key={sample.style}
                 type="button"
                 onClick={() => toggleStyle(sample.style)}
-                className={`rounded-lg border p-4 text-left transition ${
+                className={cn(
+                  "focus-ring rounded-[12px] border p-4 text-left transition-all",
                   isSelected
-                    ? "border-zinc-900 bg-zinc-50 ring-2 ring-zinc-900"
-                    : "border-zinc-200 bg-white hover:border-zinc-300"
-                }`}
+                    ? "border-primary/40 bg-primary-subtle ring-1 ring-primary/20"
+                    : "border-border bg-surface hover:border-border hover:bg-surface-muted",
+                )}
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
                   {sample.style}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-700">
+                <p className="mt-2 text-sm leading-relaxed text-muted">
                   {sample.content}
                 </p>
               </button>
@@ -175,49 +181,35 @@ export function StepStyleSelection({
         </div>
       ) : null}
 
-      <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-zinc-700">
-          Write your own (optional)
-        </span>
-        <textarea
+      <Field
+        label="Write your own (optional)"
+        hint={
+          hasOwnWriting
+            ? "With your own writing, you can select exactly 1 style."
+            : undefined
+        }
+      >
+        <Textarea
           value={ownWriting}
           onChange={(event) => setOwnWriting(event.target.value)}
           rows={4}
-          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-zinc-400 focus:ring-2"
           placeholder="Write your own version of the post..."
         />
-        {hasOwnWriting ? (
-          <p className="text-xs text-zinc-500">
-            With your own writing, you can select exactly 1 style.
-          </p>
-        ) : null}
-      </label>
+      </Field>
 
       {error ? (
-        <div className="space-y-3">
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
-          <button
-            type="button"
-            onClick={handleFinish}
-            disabled={!canFinish}
-            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+        <div className="space-y-4">
+          <Alert>{error}</Alert>
+          <Button variant="secondary" onClick={handleFinish} disabled={!canFinish}>
             Retry
-          </button>
+          </Button>
         </div>
       ) : null}
 
       {!error ? (
-        <button
-          type="button"
-          onClick={handleFinish}
-          disabled={!canFinish}
-          className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
-        >
+        <Button onClick={handleFinish} disabled={!canFinish}>
           {isSubmitting ? "Finishing onboarding..." : "Finish onboarding"}
-        </button>
+        </Button>
       ) : null}
     </div>
   );

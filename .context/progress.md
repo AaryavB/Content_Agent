@@ -1,8 +1,12 @@
 # Progress
 
-Last updated: 2026-07-17 (MVP feature-complete; Netlify deploy fixed)
+Last updated: 2026-07-20 (contextual navigation UX)
 
 ## Done
+
+- **Contextual navigation UX** — sidebar in [components/AppLayout.tsx](../components/AppLayout.tsx) now shows logo, app-defined back/forward arrows ([components/ui/NavigationControls.tsx](../components/ui/NavigationControls.tsx)), and a contextual **Profiles** link only when not on `/`. Static Dashboard/Onboarding links removed. App navigation stack in [lib/appNavigation.ts](../lib/appNavigation.ts) + [components/AppNavigationProvider.tsx](../components/AppNavigationProvider.tsx): route and onboarding-step entries, forward arrow hidden when unavailable, `completeTo` clears onboarding history on finish. Pathname sync reseeds stack on external navigation only (fixes stale stack after link/browser nav). Dashboard shows active profile name via [components/dashboard/DashboardPageHeader.tsx](../components/dashboard/DashboardPageHeader.tsx). Custom topic label renamed to **Other**.
+
+- **Premium UI redesign** — design tokens in [app/globals.css](../app/globals.css); reusable primitives in [components/ui/](../components/ui/) (Button, Input, Textarea, Card, Badge, Alert, PageShell, StepIndicator, etc.). Home, onboarding, and dashboard refactored to use shared components. No backend/behavior changes.
 
 **Build Group 1 — Foundation + Onboarding: built + verified**
 - Convex schema ([convex/schema.ts](../convex/schema.ts)): `users`, `styleProfiles`, `posts`, `backgroundInputs` — matches PRD data model exactly.

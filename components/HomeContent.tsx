@@ -1,15 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { useAppNavigation } from "@/components/AppNavigationProvider";
 import {
   clearStoredUserId,
   getStoredUserId,
   setStoredUserId,
 } from "@/lib/onboardingSession";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { PageHeader, PageShell } from "@/components/ui/PageShell";
+import { cn } from "@/lib/cn";
 
 function formatCreatedAt(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString(undefined, {
@@ -20,7 +26,7 @@ function formatCreatedAt(timestamp: number): string {
 }
 
 export function HomeContent() {
-  const router = useRouter();
+  const { push } = useAppNavigation();
   const profiles = useQuery(api.users.listUsers);
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
 
@@ -34,56 +40,48 @@ export function HomeContent() {
   ): void {
     setStoredUserId(userId);
     setActiveUserId(userId);
-    router.push(hasStyleProfile ? "/dashboard" : "/onboarding");
+    if (hasStyleProfile) {
+      push({ kind: "route", href: "/dashboard" });
+    } else {
+      push({ kind: "route", href: "/onboarding" });
+    }
   }
 
   function handleCreateProfile(): void {
     clearStoredUserId();
     setActiveUserId(null);
-    router.push("/onboarding");
+    push({ kind: "onboarding-step", step: 1 });
   }
 
   const isLoading = profiles === undefined;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-12">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold tracking-tight">Content Agent</h1>
-        <p className="mt-3 text-zinc-600">
-          Select a profile to generate LinkedIn posts, or create a new one.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        align="center"
+        title="Your profiles"
+        description="Select a profile to generate LinkedIn posts, or create a new one."
+      />
 
       <div className="mt-10 flex-1">
         {isLoading ? (
-          <div className="flex min-h-[200px] items-center justify-center">
-            <p className="text-sm text-zinc-500">Loading profiles...</p>
-          </div>
+          <LoadingState message="Loading profiles..." />
         ) : profiles.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-12 text-center">
-            <p className="text-sm text-zinc-600">No profiles yet.</p>
-            <p className="mt-1 text-sm text-zinc-500">
-              Create your first profile to start onboarding.
-            </p>
-            <button
-              type="button"
-              onClick={handleCreateProfile}
-              className="mt-6 rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
-              Create profile
-            </button>
-          </div>
+          <EmptyState
+            title="No profiles yet"
+            description="Create your first profile to start onboarding."
+            actionLabel="Create profile"
+            onAction={handleCreateProfile}
+          />
         ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-zinc-700">Your profiles</h2>
-              <button
-                type="button"
-                onClick={handleCreateProfile}
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
-              >
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-sm font-medium text-muted">
+                {profiles.length} profile{profiles.length === 1 ? "" : "s"}
+              </h2>
+              <Button variant="secondary" size="sm" onClick={handleCreateProfile}>
                 Create new profile
-              </button>
+              </Button>
             </div>
 
             <ul className="space-y-3">
@@ -100,36 +98,36 @@ export function HomeContent() {
                           profile.hasStyleProfile,
                         )
                       }
-                      className={`w-full rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:border-zinc-400 ${
+                      className={cn(
+                        "focus-ring w-full rounded-[14px] border bg-surface p-5 text-left shadow-sm transition-all",
+                        "hover:border-border hover:shadow-md",
                         isActive
-                          ? "border-zinc-900 ring-1 ring-zinc-900"
-                          : "border-zinc-200"
-                      }`}
+                          ? "border-primary/40 ring-1 ring-primary/20"
+                          : "border-border",
+                      )}
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="font-semibold text-zinc-900">
+                        <div className="min-w-0 space-y-1">
+                          <p className="font-semibold text-foreground">
                             {profile.name}
                           </p>
-                          <p className="mt-1 text-sm text-zinc-600">
+                          <p className="text-sm text-muted">
                             {profile.role} at {profile.organization}
                           </p>
-                          <p className="mt-2 text-xs text-zinc-500">
+                          <p className="text-xs text-subtle">
                             Created {formatCreatedAt(profile.createdAt)}
                           </p>
                         </div>
-                        <span
-                          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                            profile.hasStyleProfile
-                              ? "bg-green-100 text-green-800"
-                              : "bg-amber-100 text-amber-800"
-                          }`}
+                        <Badge
+                          variant={
+                            profile.hasStyleProfile ? "success" : "warning"
+                          }
                         >
                           {profile.hasStyleProfile ? "Ready" : "Continue setup"}
-                        </span>
+                        </Badge>
                       </div>
                       {isActive ? (
-                        <p className="mt-3 text-xs text-zinc-500">
+                        <p className="mt-3 text-xs text-primary">
                           Last selected profile
                         </p>
                       ) : null}
@@ -141,6 +139,6 @@ export function HomeContent() {
           </div>
         )}
       </div>
-    </main>
+    </PageShell>
   );
 }
