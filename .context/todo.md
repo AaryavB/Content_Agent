@@ -1,8 +1,20 @@
 # Todo
 
-Last updated: 2026-07-17
+Last updated: 2026-07-22
 
-## Next up (highest priority): Production verify + quality tuning
+## Next up (highest priority): Anti-slop output layer
+
+Full spec: [`anti-slop-spec.md`](../anti-slop-spec.md) — read it before starting. Summary: generated posts still read as AI-written (em dashes, "it's not X it's Y", buzzwords, engagement-bait CTAs). Build a prevent → detect → repair layer:
+
+1. New `convex/lib/slopFilter.ts` — `SLOP_INSTRUCTIONS` constant, `BANNED_PATTERNS` regex list, `lintSlop()`, `scrubHardTokens()`, `describeViolations()`.
+2. Append `SLOP_INSTRUCTIONS` to `CALL4_SYSTEM` in `postPrompts.ts` (primary fix).
+3. Wire detect+repair into `generatePost` and `regeneratePostAction` in `postActions.ts` — lint the draft, one silent regenerate with violations fed back if it fails, then `scrubHardTokens` as last resort.
+4. Fix the Call 2 "flashy" and "preachy" voice definitions — they currently instruct hype/moralizing language, which is slop by design (§6 of the spec).
+5. Keep `prompt-engineering.md` in sync with any prompt changes.
+
+P1/P2 (telemetry, Calls 3/5 propagation, config-driven blocklist) are in the spec — not needed for first pass.
+
+## Then: Production verify + quality tuning
 
 ### Netlify / production
 
