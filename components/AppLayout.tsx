@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppNavigation } from "@/components/AppNavigationProvider";
 import { NavigationControls } from "@/components/ui/NavigationControls";
-import { cn } from "@/lib/cn";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -12,41 +11,40 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const showProfilesLink = pathname !== "/";
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-border bg-surface px-4 py-6">
-        <Link
-          href="/"
-          onClick={() => reset()}
-          className="focus-ring flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-sm font-semibold text-foreground"
-        >
-          <span
-            className="h-2 w-2 shrink-0 rounded-full bg-primary"
-            aria-hidden="true"
-          />
-          Content Agent
-        </Link>
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-5 sm:px-8">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <NavigationControls className="-ml-1.5" />
+            <Link
+              href="/"
+              onClick={() => reset()}
+              aria-label="Content Agent home"
+              className="focus-ring group flex items-center gap-2 rounded-[8px] px-1.5 py-1"
+            >
+              <span
+                className="h-2 w-2 shrink-0 rounded-full bg-primary transition-transform duration-200 group-hover:scale-125"
+                aria-hidden="true"
+              />
+              <span className="font-display text-[17px] font-medium tracking-tight text-foreground">
+                Content Agent
+              </span>
+            </Link>
+          </div>
 
-        <NavigationControls className="mt-6" />
-
-        {showProfilesLink ? (
-          <nav aria-label="Main navigation" className="mt-6">
-            <ul className="space-y-1">
-              <li>
-                <Link
-                  href="/"
-                  onClick={() => reset()}
-                  className={cn(
-                    "focus-ring block rounded-[8px] px-3 py-2 text-sm font-medium transition-colors",
-                    "text-muted hover:bg-surface-muted hover:text-foreground",
-                  )}
-                >
-                  Profiles
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        ) : null}
-      </aside>
+          {showProfilesLink ? (
+            <nav aria-label="Main navigation" className="shrink-0">
+              <Link
+                href="/"
+                onClick={() => reset()}
+                className="focus-ring rounded-full px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
+              >
+                Profiles
+              </Link>
+            </nav>
+          ) : null}
+        </div>
+      </header>
 
       <div className="min-w-0 flex-1">{children}</div>
     </div>

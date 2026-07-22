@@ -31,29 +31,29 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
 export function NavigationControls({ className }: NavigationControlsProps) {
   const { goBack, goForward, canGoBack, canGoForward } = useAppNavigation();
 
+  if (!canGoBack && !canGoForward) {
+    return null;
+  }
+
   return (
-    <div className={cn("flex items-center gap-1", className)}>
-      <button
-        type="button"
-        onClick={goBack}
-        disabled={!canGoBack}
-        aria-label="Go back"
-        className={cn(
-          "focus-ring flex h-8 w-8 items-center justify-center rounded-[8px] text-muted transition-colors",
-          canGoBack
-            ? "hover:bg-surface-muted hover:text-foreground"
-            : "cursor-not-allowed opacity-40",
-        )}
-      >
-        <ArrowIcon direction="left" />
-      </button>
+    <div className={cn("flex items-center gap-0.5", className)}>
+      {canGoBack ? (
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label="Go back"
+          className="focus-ring flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
+        >
+          <ArrowIcon direction="left" />
+        </button>
+      ) : null}
 
       {canGoForward ? (
         <button
           type="button"
           onClick={goForward}
           aria-label="Go forward"
-          className="focus-ring flex h-8 w-8 items-center justify-center rounded-[8px] text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
+          className="focus-ring flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
         >
           <ArrowIcon direction="right" />
         </button>

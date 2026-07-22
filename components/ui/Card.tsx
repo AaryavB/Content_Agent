@@ -15,7 +15,7 @@ export function Card({ children, className, padding = "lg" }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-[14px] border border-border bg-surface shadow-sm",
+        "rounded-[18px] border border-border/80 bg-surface shadow-md",
         paddingStyles[padding],
         className,
       )}
@@ -33,8 +33,8 @@ type CardHeaderProps = {
 
 export function CardHeader({ title, description, className }: CardHeaderProps) {
   return (
-    <div className={cn("space-y-1", className)}>
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">
+    <div className={cn("space-y-1.5", className)}>
+      <h2 className="font-display text-xl font-medium tracking-tight text-foreground">
         {title}
       </h2>
       {description ? (

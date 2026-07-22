@@ -9,7 +9,7 @@ export function PageShell({ children, className }: PageShellProps) {
   return (
     <main
       className={cn(
-        "mx-auto flex min-h-screen w-full max-w-2xl flex-col px-6 py-10 sm:px-8",
+        "mx-auto flex w-full max-w-2xl flex-col px-5 pb-24 pt-12 sm:px-8 sm:pt-16",
         className,
       )}
     >
@@ -47,13 +47,18 @@ export function PageHeader({
           titleAddon ? "flex-wrap" : undefined,
         )}
       >
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-display text-[2rem] font-medium leading-[1.1] tracking-tight text-foreground sm:text-4xl">
           {title}
         </h1>
         {titleAddon}
       </div>
       {description ? (
-        <p className="mt-2 text-base leading-relaxed text-muted">
+        <p
+          className={cn(
+            "mt-3 max-w-xl text-base leading-relaxed text-muted",
+            align === "center" ? "mx-auto" : undefined,
+          )}
+        >
           {description}
         </p>
       ) : null}

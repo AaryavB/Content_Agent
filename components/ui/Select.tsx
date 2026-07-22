@@ -26,7 +26,7 @@ export function Select({
       <select
         value={value}
         className={cn(
-          "focus-ring h-10 w-full appearance-none rounded-[10px] border border-border bg-surface px-3 pr-9 text-sm text-foreground transition-colors",
+          "focus-ring h-11 w-full cursor-pointer appearance-none rounded-[12px] border border-border bg-surface px-3.5 pr-10 text-sm text-foreground transition-colors hover:border-subtle/60",
           "disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-muted",
           !value && "text-subtle",
           className,
