@@ -8,15 +8,18 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
+import type * as http from "../http.js";
 import type * as lib_onboarding from "../lib/onboarding.js";
 import type * as lib_onboardingPrompts from "../lib/onboardingPrompts.js";
 import type * as lib_openrouter from "../lib/openrouter.js";
+import type * as lib_ownership from "../lib/ownership.js";
 import type * as lib_postPrompts from "../lib/postPrompts.js";
 import type * as lib_slopFilter from "../lib/slopFilter.js";
 import type * as onboardingActions from "../onboardingActions.js";
 import type * as postActions from "../postActions.js";
 import type * as posts from "../posts.js";
-import type * as users from "../users.js";
+import type * as profiles from "../profiles.js";
 
 import type {
   ApiFromModules,
@@ -25,15 +28,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
+  http: typeof http;
   "lib/onboarding": typeof lib_onboarding;
   "lib/onboardingPrompts": typeof lib_onboardingPrompts;
   "lib/openrouter": typeof lib_openrouter;
+  "lib/ownership": typeof lib_ownership;
   "lib/postPrompts": typeof lib_postPrompts;
   "lib/slopFilter": typeof lib_slopFilter;
   onboardingActions: typeof onboardingActions;
   postActions: typeof postActions;
   posts: typeof posts;
-  users: typeof users;
+  profiles: typeof profiles;
 }>;
 
 /**

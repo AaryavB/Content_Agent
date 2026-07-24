@@ -7,13 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "convex:dev": "convex dev"
+    "convex:dev": "convex dev",
+    "convex:login": "convex login"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AaryavB/Content_Agent.git"
   },
   "dependencies": {
+    "@auth/core": "^0.41.1",
+    "@convex-dev/auth": "^0.0.94",
     "convex": "^1.42.1",
     "next": "^15.5.0",
     "react": "^19.1.0",

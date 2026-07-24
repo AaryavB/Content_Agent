@@ -6,6 +6,10 @@ import {
   truncateToWords,
   validateStyleProfileInput,
 } from "./lib/onboarding";
+import {
+  requireAccountId,
+  requireProfileOwnedByAccountAction,
+} from "./lib/ownership";
 import { chatCompletion, chatCompletionJson } from "./lib/openrouter";
 import {
   CALL1_PARAMS,
@@ -24,10 +28,12 @@ type StyleSample = { style: (typeof STYLE_LABELS)[number]; content: string };
 // LLM Call 1 — infer a concise professional background from a LinkedIn paste.
 export const inferProfessionalBackground = action({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     linkedinPaste: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireProfileOwnedByAccountAction(ctx, args.userId);
+
     const linkedinPaste = args.linkedinPaste.trim();
     if (linkedinPaste.length < 50) {
       throw new Error("LinkedIn paste must be at least 50 characters.");
@@ -39,11 +45,9 @@ export const inferProfessionalBackground = action({
       ...CALL1_PARAMS,
     });
 
-    // Hard-truncate: the prompt asks for <=150 words, but models don't reliably
-    // self-limit, and this string bloats every future generation prompt.
     const professionalBackground = truncateToWords(raw, 150);
 
-    await ctx.runMutation(api.users.updateProfessionalBackground, {
+    await ctx.runMutation(api.profiles.updateProfessionalBackground, {
       userId: args.userId,
       professionalBackground,
     });
@@ -55,7 +59,9 @@ export const inferProfessionalBackground = action({
 // LLM Call 2 — generate 5 one-paragraph samples, one per style label.
 export const generateStyleSamples = action({
   args: { topic: v.string() },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    await requireAccountId(ctx);
+
     const topic = args.topic.trim();
     if (!topic) {
       throw new Error("Topic is required.");
@@ -74,8 +80,6 @@ export const generateStyleSamples = action({
           throw new Error("Expected a `samples` array.");
         }
 
-        // Rebuild by iterating our known labels so the result is always exactly
-        // 5 items, correctly labeled and ordered, regardless of model ordering.
         return STYLE_LABELS.map((style) => {
           const match = rawSamples.find(
             (item): item is { style: string; content: string } =>
@@ -102,12 +106,14 @@ export const generateStyleSamples = action({
 // LLM Call 3 — synthesize the writing style profile from style selections.
 export const synthesizeStyleProfile = action({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     selectedStyles: v.array(v.string()),
     userWritingSample: v.optional(v.string()),
     sampleWritingWeight: v.number(),
   },
   handler: async (ctx, args) => {
+    await requireProfileOwnedByAccountAction(ctx, args.userId);
+
     validateStyleProfileInput(
       args.selectedStyles,
       args.userWritingSample,
@@ -126,7 +132,7 @@ export const synthesizeStyleProfile = action({
 
     const profileText = truncateToWords(raw, 200);
 
-    await ctx.runMutation(api.users.createStyleProfile, {
+    await ctx.runMutation(api.profiles.createStyleProfile, {
       userId: args.userId,
       profileText,
       selectedStyles: args.selectedStyles,

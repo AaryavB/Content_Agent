@@ -28,9 +28,9 @@ export function OnboardingWizard() {
   const { push, replace, completeTo, registerOnboardingNavigator } =
     useAppNavigation();
 
-  const createUser = useMutation(api.users.createUser);
-  const saveBackgroundInput = useMutation(api.users.saveBackgroundInput);
-  const updateTopics = useMutation(api.users.updateTopics);
+  const createProfile = useMutation(api.profiles.createProfile);
+  const saveBackgroundInput = useMutation(api.profiles.saveBackgroundInput);
+  const updateTopics = useMutation(api.profiles.updateTopics);
   const inferProfessionalBackground = useAction(
     api.onboardingActions.inferProfessionalBackground,
   );
@@ -41,7 +41,7 @@ export function OnboardingWizard() {
   const [storedUserId, setStoredUserIdState] = useState<string | null>(null);
   const [hasCheckedSession, setHasCheckedSession] = useState(false);
   const [step, setStep] = useState<OnboardingStep>(1);
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
+  const [userId, setUserId] = useState<Id<"profiles"> | null>(null);
   const hasSyncedResumeNavRef = useRef(false);
   const hasCompletedRedirectRef = useRef(false);
 
@@ -67,12 +67,12 @@ export function OnboardingWizard() {
   }, [registerOnboardingNavigator]);
 
   const user = useQuery(
-    api.users.getUser,
-    storedUserId ? { userId: storedUserId as Id<"users"> } : "skip",
+    api.profiles.getProfile,
+    storedUserId ? { userId: storedUserId as Id<"profiles"> } : "skip",
   );
   const styleProfile = useQuery(
-    api.users.getStyleProfile,
-    storedUserId ? { userId: storedUserId as Id<"users"> } : "skip",
+    api.profiles.getStyleProfile,
+    storedUserId ? { userId: storedUserId as Id<"profiles"> } : "skip",
   );
 
   useEffect(() => {
@@ -136,7 +136,7 @@ export function OnboardingWizard() {
     setStepError(null);
 
     try {
-      const newUserId = await createUser({ name, role, organization });
+      const newUserId = await createProfile({ name, role, organization });
       setStoredUserId(newUserId);
       setStoredUserIdState(newUserId);
       setUserId(newUserId);

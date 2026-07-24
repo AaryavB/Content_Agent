@@ -1,8 +1,10 @@
 # Progress
 
-Last updated: 2026-07-22 (anti-slop P0)
+Last updated: 2026-07-24
 
 ## Done
+
+- **Authentication + profile ownership** — `@convex-dev/auth` Password provider ([convex/auth.ts](../convex/auth.ts)). Founder profiles moved to `profiles` table with `ownerId` → auth `users` (necessary rename: Convex Auth requires `users` for accounts). [convex/profiles.ts](../convex/profiles.ts) replaces `users.ts`; ownership checks in [convex/lib/ownership.ts](../convex/lib/ownership.ts) on all profile/post queries, mutations, and actions. `/login`, `/signup` pages; protected `/`, `/onboarding`, `/dashboard`; logout in [components/AppLayout.tsx](../components/AppLayout.tsx). Profile picker scoped per account via `listProfiles`. Sign-up creates account only; profile creation unchanged in onboarding step 1 (`createProfile` stamps `ownerId`). **Manual verify:** set `JWT_PRIVATE_KEY` + `JWKS` on Convex deployment; test two accounts cannot see each other's profiles.
 
 - **Anti-slop output layer (P0)** — prevent → detect → repair on post generation. [`convex/lib/slopFilter.ts`](../convex/lib/slopFilter.ts): `SLOP_INSTRUCTIONS`, Tier-1 `BANNED_PATTERNS`, `lintSlop()`, `describeViolations()`, `scrubHardTokens()`. [`convex/lib/postPrompts.ts`](../convex/lib/postPrompts.ts): `CALL4_SYSTEM` appends hard rules; CTA/hashtag guidance aligned; `repairNote` for silent retry. [`convex/postActions.ts`](../convex/postActions.ts): `generateCleanDraft()` — lint → one repair call at temp 0.65 → deterministic scrub; used by `generatePost` and `regeneratePostAction`. `finalizePostAction` unchanged (linter never runs on founder edits). Call 2 flashy/preachy voices de-slopped in [`convex/lib/onboardingPrompts.ts`](../convex/lib/onboardingPrompts.ts). Local sanity: `node --experimental-strip-types scripts/verify-slop.mjs`.
 
@@ -11,13 +13,13 @@ Last updated: 2026-07-22 (anti-slop P0)
 - **Premium UI redesign** — design tokens in [app/globals.css](../app/globals.css); reusable primitives in [components/ui/](../components/ui/) (Button, Input, Textarea, Card, Badge, Alert, PageShell, StepIndicator, etc.). Home, onboarding, and dashboard refactored to use shared components. No backend/behavior changes.
 
 **Build Group 1 — Foundation + Onboarding: built + verified**
-- Convex schema ([convex/schema.ts](../convex/schema.ts)): `users`, `styleProfiles`, `posts`, `backgroundInputs` — matches PRD data model exactly.
-- Queries/mutations ([convex/users.ts](../convex/users.ts)): `listUsers`, `getUser`, `getStyleProfile`, `getBackgroundInput`, `createUser`, `saveBackgroundInput`, `updateProfessionalBackground`, `updateTopics`, `createStyleProfile`, `updateStyleProfile`. Validation matches spec (LinkedIn paste ≥50 chars, 3-4 topics, style-selection weight rules in [convex/lib/onboarding.ts](../convex/lib/onboarding.ts)).
+- Convex schema ([convex/schema.ts](../convex/schema.ts)): `profiles` (founder rows), `styleProfiles`, `posts`, `backgroundInputs` + Convex Auth `authTables` (`users` for accounts).
+- Queries/mutations ([convex/profiles.ts](../convex/profiles.ts)): `listProfiles`, `getProfile`, `getStyleProfile`, `getBackgroundInput`, `createProfile`, `saveBackgroundInput`, `updateProfessionalBackground`, `updateTopics`, `createStyleProfile`, `updateStyleProfile`. Validation matches spec (LinkedIn paste ≥50 chars, 3-4 topics, style-selection weight rules in [convex/lib/onboarding.ts](../convex/lib/onboarding.ts)).
 - 4-step onboarding UI ([components/onboarding/](../components/onboarding/)): QuickProfile → LinkedInPaste → Topics → StyleSelection, orchestrated by [OnboardingWizard.tsx](../components/onboarding/OnboardingWizard.tsx).
 - Resume-on-refresh: active `userId` cached in `localStorage` ([lib/onboardingSession.ts](../lib/onboardingSession.ts)), with one-time migration from legacy `sessionStorage`. Resume step derived in [lib/onboardingResume.ts](../lib/onboardingResume.ts).
-- **Profile picker home** ([components/HomeContent.tsx](../components/HomeContent.tsx)): lists all profiles via `listUsers`, select → `/dashboard` or resume `/onboarding`, create new profile, highlights last-selected profile.
+- **Profile picker home** ([components/HomeContent.tsx](../components/HomeContent.tsx)): lists account-owned profiles via `listProfiles`, select → `/dashboard` or resume `/onboarding`, create new profile, highlights last-selected profile.
 - Onboarding finish redirects to `/dashboard`. Completed onboarding revisit redirects to `/dashboard` (not dead-end `/`).
-- Dashboard with no/invalid session redirects to `/` (profile picker), not `/onboarding`.
+- Dashboard with no/invalid session redirects to `/` (profile picker). Unauthenticated visitors redirect to `/login`.
 - **Onboarding LLM calls (1, 2, 3)** — wired to OpenRouter, verified end-to-end 2026-07-17.
 
 **Onboarding LLM infrastructure**
