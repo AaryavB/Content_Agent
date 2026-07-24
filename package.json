@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "convex:dev": "convex dev",
-    "convex:login": "convex login"
+    "convex:login": "convex login",
+    "convex:deploy": "convex deploy",
+    "generate:keys": "node scripts/generateKeys.mjs"
   },
   "repository": {
     "type": "git",

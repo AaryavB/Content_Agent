@@ -4,11 +4,30 @@ Last updated: 2026-07-24
 
 ## Next up: Auth E2E verify
 
-1. Set `JWT_PRIVATE_KEY` and `JWKS` on Convex deployment (see [.context/integrations.md](integrations.md)).
-2. Run `npx convex dev` (or deploy) to push schema: `users` → auth accounts, `profiles` with `ownerId`.
-3. Clear old founder data in Convex dashboard if needed (pre-auth `users` rows do not auto-migrate).
+Dev deployment is ready — steps 1–3 below are done (2026-07-24):
+`JWT_PRIVATE_KEY` + `JWKS` set on `impressive-wildebeest-890`, schema pushed,
+pre-auth rows cleared from `users` / `backgroundInputs` / `posts` / `styleProfiles`.
+
+1. ~~Set `JWT_PRIVATE_KEY` and `JWKS` on Convex deployment~~ — done.
+2. ~~Push schema: `users` → auth accounts, `profiles` with `ownerId`~~ — done.
+3. ~~Clear old founder data (pre-auth `users` rows do not auto-migrate)~~ — done.
 4. Sign up two accounts; create a profile under each; confirm neither can see or open the other's profile.
 5. Test logout, login, protected routes, and full onboarding → generate → finalize flow while authenticated.
+
+**Anyone else pulling this branch:** run `npm install` first — auth added
+`@convex-dev/auth`, and a stale `node_modules` fails with
+`Could not resolve "@convex-dev/auth/server"`. On Windows use `npm run convex:dev`
+(PowerShell blocks `npx`).
+
+## Then: Production deployment
+
+No prod Convex deployment exists yet — Netlify currently points at the **dev**
+deployment, so the live site and local dev share one database. Full runbook in
+[.context/integrations.md](integrations.md#production-deployment-runbook).
+
+Blocked on the Convex team owner: creating the deployment needs owner rights
+(other members get `CreateDeployment` permission denied). Do this *after* auth
+E2E passes on dev.
 
 ## Then: P1 anti-slop follow-up
 

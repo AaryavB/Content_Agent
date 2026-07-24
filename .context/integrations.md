@@ -67,6 +67,58 @@ Token budgets were raised and `reasoning.effort: "none"` was set. E2E testing (2
 - **Build requirement:** `convex/_generated/` must be committed. Netlify does not run `convex dev`; without generated bindings, build fails with `Can't resolve '@/convex/_generated/api'`. After changing `convex/` functions, run `npx convex codegen` locally and commit updated `convex/_generated/`.
 - **Backend:** Convex cloud (not Netlify). Frontend is static/SSR Next.js only; all data + LLM calls go through Convex client → Convex deployment.
 
+## Production deployment (runbook)
+
+| Deployment | Name | URL |
+|---|---|---|
+| Dev | `impressive-wildebeest-890` | `https://impressive-wildebeest-890.convex.cloud` |
+| **Prod** | `marvelous-fly-60` | `https://marvelous-fly-60.convex.cloud` |
+
+**Status (2026-07-24):** prod deployment created; `OPENROUTER_API_KEY` and
+`OPENROUTER_MODEL` set on it. Still outstanding: steps 1–4 below.
+
+> Netlify's `NEXT_PUBLIC_CONVEX_URL` still points at the **dev** deployment, so the
+> live site and local development share one database — test data written locally
+> shows up on the live site. Step 3 fixes that.
+
+**Owner rights required.** Deploying to prod and creating deployments are
+owner-only; other team members get `You do not have permission to perform this
+operation (deployment:deploy)`. Team members *can* read prod env vars.
+
+Run in this order — repointing Netlify before prod has the schema breaks the live site.
+
+1. **Set the JWT keypair on prod.** Generate a **fresh** pair — never copy the dev
+   values. `JWKS` and `JWT_PRIVATE_KEY` are two halves of one key and must come from
+   the same run:
+   ```
+   npm run generate:keys
+   npx convex env set JWT_PRIVATE_KEY --prod -- "<value>"
+   npx convex env set JWKS --prod -- '<value>'
+   npx convex env list --prod           # expect all four
+   ```
+   The OpenRouter key/model are safe to copy from dev; the JWT pair is not — a shared
+   signing key means a dev-issued login token is accepted by production.
+
+2. **Push schema + functions to prod** (owner only):
+   ```
+   npx convex deploy          # Windows: npm run convex:deploy
+   ```
+
+3. **Repoint Netlify** → Site settings → Environment variables:
+   `NEXT_PUBLIC_CONVEX_URL` = `https://marvelous-fly-60.convex.cloud`
+
+4. **Merge `staging` → `master`.** Netlify auto-deploys from `master`, which still
+   predates auth. Nothing ships until this merge happens.
+
+5. **Smoke-test prod:** signup → login → onboarding → generate → finalize.
+
+### Optional: let Netlify deploy Convex itself
+
+Only needed if the Netlify build should run `convex deploy` (it currently does not —
+it builds Next.js against the committed `convex/_generated/`). Requires a
+`CONVEX_DEPLOY_KEY` from the Convex dashboard set as a Netlify env var, since CI
+cannot do an interactive browser login. A local `npx convex deploy` needs no such key.
+
 ### Convex deploy on Windows
 
 **PowerShell `npx` blocked:** If `npx convex ...` fails with "running scripts is disabled on this system", use either:
