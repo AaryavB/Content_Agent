@@ -110,10 +110,16 @@ Run in this order — repointing Netlify before prod has the schema breaks the l
 
 2. **Push schema + functions to prod** (owner only):
    ```
-   npx convex deploy          # Windows: npm run convex:deploy
+   npx convex deploy
    ```
-   On Windows, set `$env:NODE_OPTIONS = "--use-system-ca"` first if you hit TLS
-   errors — see [Convex deploy on Windows](#convex-deploy-on-windows) below.
+   On Windows both lines are required, in this order — the TLS failure is not
+   intermittent, it happens on every run:
+   ```powershell
+   $env:NODE_OPTIONS = "--use-system-ca"
+   npm run convex:deploy
+   ```
+   See [Convex deploy on Windows](#convex-deploy-on-windows) below to set it
+   permanently instead of per-terminal.
 
 3. **Repoint Netlify** → Site settings → Environment variables:
    `NEXT_PUBLIC_CONVEX_URL` = `https://marvelous-fly-60.convex.cloud`
@@ -138,4 +144,18 @@ cannot do an interactive browser login. A local `npx convex deploy` needs no suc
 
 Permanent fix (optional, in PowerShell as your user): `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
-**TLS certificate errors:** set `$env:NODE_OPTIONS = "--use-system-ca"` before running (see `scripts/smoke-group1.ps1`).
+**TLS certificate errors:** `fetch failed` / `unable to verify the first certificate`
+on any `convex` command. Something local (antivirus or a corporate proxy) re-signs TLS
+connections with a root CA that Windows trusts but Node's bundled CA list does not.
+
+Per terminal:
+```powershell
+$env:NODE_OPTIONS = "--use-system-ca"
+```
+
+Permanently, so new terminals inherit it (then reopen the terminal):
+```powershell
+[Environment]::SetEnvironmentVariable("NODE_OPTIONS", "--use-system-ca", "User")
+```
+
+`scripts/smoke-group1.ps1` sets it at the top for the same reason.
