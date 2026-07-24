@@ -18,3 +18,10 @@ next-env.d.ts
 
 # misc
 .DS_Store
+
+# editor / agent tooling
+.claude/
+
+# generated auth keys — never commit (see scripts/generateKeys.mjs)
+keys.txt
+*.keys.txt

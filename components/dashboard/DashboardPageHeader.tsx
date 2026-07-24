@@ -16,8 +16,8 @@ export function DashboardPageHeader() {
   }, []);
 
   const user = useQuery(
-    api.users.getUser,
-    storedUserId ? { userId: storedUserId as Id<"users"> } : "skip",
+    api.profiles.getProfile,
+    storedUserId ? { userId: storedUserId as Id<"profiles"> } : "skip",
   );
 
   return (

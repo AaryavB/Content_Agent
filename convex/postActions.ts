@@ -2,6 +2,10 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
+import {
+  requirePostOwnedByAccountAction,
+  requireProfileOwnedByAccountAction,
+} from "./lib/ownership";
 import { chatCompletion, chatCompletionJson } from "./lib/openrouter";
 import {
   CALL4_PARAMS,
@@ -64,7 +68,7 @@ async function generateCleanDraft(
 
 export const generatePost = action({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     topic: v.string(),
     userInput: v.optional(v.string()),
     mode: v.union(v.literal("user-led"), v.literal("surprise-me")),
@@ -78,12 +82,9 @@ export const generatePost = action({
       throw new Error("Topic is required.");
     }
 
-    const user = await ctx.runQuery(api.users.getUser, { userId: args.userId });
-    if (!user) {
-      throw new Error("User not found. Complete onboarding first.");
-    }
+    const user = await requireProfileOwnedByAccountAction(ctx, args.userId);
 
-    const styleProfile = await ctx.runQuery(api.users.getStyleProfile, {
+    const styleProfile = await ctx.runQuery(api.profiles.getStyleProfile, {
       userId: args.userId,
     });
     if (!styleProfile) {
@@ -129,21 +130,15 @@ export const regeneratePostAction = action({
     ctx,
     args,
   ): Promise<{ generatedContent: string }> => {
-    const post = await ctx.runQuery(api.posts.getPost, { postId: args.postId });
-    if (!post) {
-      throw new Error("Post not found.");
-    }
+    const post = await requirePostOwnedByAccountAction(ctx, args.postId);
 
     if (post.status !== "draft") {
       throw new Error("Only draft posts can be regenerated.");
     }
 
-    const user = await ctx.runQuery(api.users.getUser, { userId: post.userId });
-    if (!user) {
-      throw new Error("User not found. Complete onboarding first.");
-    }
+    const user = await requireProfileOwnedByAccountAction(ctx, post.userId);
 
-    const styleProfile = await ctx.runQuery(api.users.getStyleProfile, {
+    const styleProfile = await ctx.runQuery(api.profiles.getStyleProfile, {
       userId: post.userId,
     });
     if (!styleProfile) {
@@ -191,10 +186,7 @@ export const finalizePostAction = action({
     updatedProfileText: string | null;
     profileUpdateFailed: boolean;
   }> => {
-    const post = await ctx.runQuery(api.posts.getPost, { postId: args.postId });
-    if (!post) {
-      throw new Error("Post not found.");
-    }
+    const post = await requirePostOwnedByAccountAction(ctx, args.postId);
 
     if (post.status !== "draft") {
       throw new Error("Only draft posts can be finalized.");
@@ -214,7 +206,7 @@ export const finalizePostAction = action({
       return { updatedProfileText: null, profileUpdateFailed: false };
     }
 
-    const styleProfile = await ctx.runQuery(api.users.getStyleProfile, {
+    const styleProfile = await ctx.runQuery(api.profiles.getStyleProfile, {
       userId: post.userId,
     });
     if (!styleProfile) {
@@ -243,7 +235,7 @@ export const finalizePostAction = action({
     let profileUpdateFailed = false;
 
     try {
-      await ctx.runMutation(api.users.updateStyleProfile, {
+      await ctx.runMutation(api.profiles.updateStyleProfile, {
         userId: post.userId,
         profileText: updatedProfileText,
       });

@@ -79,16 +79,16 @@ export function DashboardContent() {
   }, []);
 
   const user = useQuery(
-    api.users.getUser,
-    storedUserId ? { userId: storedUserId as Id<"users"> } : "skip",
+    api.profiles.getProfile,
+    storedUserId ? { userId: storedUserId as Id<"profiles"> } : "skip",
   );
   const styleProfile = useQuery(
-    api.users.getStyleProfile,
-    storedUserId ? { userId: storedUserId as Id<"users"> } : "skip",
+    api.profiles.getStyleProfile,
+    storedUserId ? { userId: storedUserId as Id<"profiles"> } : "skip",
   );
   const finalizedPosts = useQuery(
     api.posts.getFinalizedPosts,
-    storedUserId ? { userId: storedUserId as Id<"users"> } : "skip",
+    storedUserId ? { userId: storedUserId as Id<"profiles"> } : "skip",
   );
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export function DashboardContent() {
 
     try {
       const result = await generatePost({
-        userId: storedUserId as Id<"users">,
+        userId: storedUserId as Id<"profiles">,
         topic: getResolvedTopic(),
         userInput: userInput.trim() || undefined,
         mode: "user-led",
@@ -196,7 +196,7 @@ export function DashboardContent() {
 
     try {
       const result = await generatePost({
-        userId: storedUserId as Id<"users">,
+        userId: storedUserId as Id<"profiles">,
         topic: randomTopic,
         mode: "surprise-me",
       });

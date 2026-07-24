@@ -1,6 +1,10 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc } from "./_generated/dataModel";
+import {
+  requirePostOwnedByAccount,
+  requireProfileOwnedByAccount,
+} from "./lib/ownership";
 
 const POST_MODES = ["user-led", "surprise-me"] as const;
 
@@ -17,8 +21,9 @@ function assertDraftPost(post: Doc<"posts"> | null): Doc<"posts"> {
 }
 
 export const getPostsByUser = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("profiles") },
   handler: async (ctx, args) => {
+    await requireProfileOwnedByAccount(ctx, args.userId);
     const posts = await ctx.db
       .query("posts")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -29,8 +34,9 @@ export const getPostsByUser = query({
 });
 
 export const getFinalizedPosts = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("profiles") },
   handler: async (ctx, args) => {
+    await requireProfileOwnedByAccount(ctx, args.userId);
     const posts = await ctx.db
       .query("posts")
       .withIndex("by_user_status", (q) =>
@@ -47,23 +53,30 @@ export const getFinalizedPosts = query({
 export const getPost = query({
   args: { postId: v.id("posts") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.postId);
+    try {
+      return await requirePostOwnedByAccount(ctx, args.postId);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "Not authorized to access this profile."
+      ) {
+        throw error;
+      }
+      return null;
+    }
   },
 });
 
 export const createPost = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     topic: v.string(),
     userInput: v.optional(v.string()),
     mode: v.string(),
     generatedContent: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found.");
-    }
+    await requireProfileOwnedByAccount(ctx, args.userId);
 
     const topic = args.topic.trim();
     if (!topic) {
@@ -98,7 +111,7 @@ export const regeneratePost = mutation({
     regenerateNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    assertDraftPost(await ctx.db.get(args.postId));
+    assertDraftPost(await requirePostOwnedByAccount(ctx, args.postId));
 
     const generatedContent = args.generatedContent.trim();
     if (!generatedContent) {
@@ -115,7 +128,7 @@ export const regeneratePost = mutation({
 export const rejectPost = mutation({
   args: { postId: v.id("posts") },
   handler: async (ctx, args) => {
-    assertDraftPost(await ctx.db.get(args.postId));
+    assertDraftPost(await requirePostOwnedByAccount(ctx, args.postId));
 
     await ctx.db.patch(args.postId, { status: "rejected" });
   },
@@ -128,7 +141,7 @@ export const finalizePost = mutation({
     editsDiff: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    assertDraftPost(await ctx.db.get(args.postId));
+    assertDraftPost(await requirePostOwnedByAccount(ctx, args.postId));
 
     const finalContent = args.finalContent.trim();
     if (!finalContent) {

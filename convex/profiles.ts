@@ -1,26 +1,34 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { validateTopics } from "./lib/onboarding";
+import {
+  requireAccountId,
+  requireProfileOwnedByAccount,
+} from "./lib/ownership";
 
-export const listUsers = query({
+export const listProfiles = query({
   args: {},
   handler: async (ctx) => {
-    const users = await ctx.db.query("users").collect();
-    const sorted = users.sort((a, b) => b.createdAt - a.createdAt);
+    const accountId = await requireAccountId(ctx);
+    const profiles = await ctx.db
+      .query("profiles")
+      .withIndex("by_owner", (q) => q.eq("ownerId", accountId))
+      .collect();
+    const sorted = profiles.sort((a, b) => b.createdAt - a.createdAt);
 
     return await Promise.all(
-      sorted.map(async (user) => {
+      sorted.map(async (profile) => {
         const styleProfile = await ctx.db
           .query("styleProfiles")
-          .withIndex("by_user", (q) => q.eq("userId", user._id))
+          .withIndex("by_user", (q) => q.eq("userId", profile._id))
           .first();
 
         return {
-          userId: user._id,
-          name: user.name,
-          role: user.role,
-          organization: user.organization,
-          createdAt: user.createdAt,
+          userId: profile._id,
+          name: profile.name,
+          role: profile.role,
+          organization: profile.organization,
+          createdAt: profile.createdAt,
           hasStyleProfile: styleProfile !== null,
         };
       }),
@@ -28,16 +36,27 @@ export const listUsers = query({
   },
 });
 
-export const getUser = query({
-  args: { userId: v.id("users") },
+export const getProfile = query({
+  args: { userId: v.id("profiles") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
+    try {
+      return await requireProfileOwnedByAccount(ctx, args.userId);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "Not authorized to access this profile."
+      ) {
+        throw error;
+      }
+      return null;
+    }
   },
 });
 
 export const getStyleProfile = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("profiles") },
   handler: async (ctx, args) => {
+    await requireProfileOwnedByAccount(ctx, args.userId);
     return await ctx.db
       .query("styleProfiles")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -46,8 +65,9 @@ export const getStyleProfile = query({
 });
 
 export const getBackgroundInput = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id("profiles") },
   handler: async (ctx, args) => {
+    await requireProfileOwnedByAccount(ctx, args.userId);
     const inputs = await ctx.db
       .query("backgroundInputs")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -61,13 +81,14 @@ export const getBackgroundInput = query({
   },
 });
 
-export const createUser = mutation({
+export const createProfile = mutation({
   args: {
     name: v.string(),
     role: v.string(),
     organization: v.string(),
   },
   handler: async (ctx, args) => {
+    const accountId = await requireAccountId(ctx);
     const name = args.name.trim();
     const role = args.role.trim();
     const organization = args.organization.trim();
@@ -76,7 +97,8 @@ export const createUser = mutation({
       throw new Error("Name, role, and organization are required.");
     }
 
-    return await ctx.db.insert("users", {
+    return await ctx.db.insert("profiles", {
+      ownerId: accountId,
       name,
       role,
       organization,
@@ -89,14 +111,11 @@ export const createUser = mutation({
 
 export const saveBackgroundInput = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     linkedinPaste: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found.");
-    }
+    await requireProfileOwnedByAccount(ctx, args.userId);
 
     const linkedinPaste = args.linkedinPaste.trim();
     if (linkedinPaste.length < 50) {
@@ -113,14 +132,11 @@ export const saveBackgroundInput = mutation({
 
 export const updateProfessionalBackground = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     professionalBackground: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found.");
-    }
+    await requireProfileOwnedByAccount(ctx, args.userId);
 
     await ctx.db.patch(args.userId, {
       professionalBackground: args.professionalBackground.trim(),
@@ -130,15 +146,11 @@ export const updateProfessionalBackground = mutation({
 
 export const updateTopics = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     topics: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found.");
-    }
-
+    await requireProfileOwnedByAccount(ctx, args.userId);
     const topics = validateTopics(args.topics);
 
     await ctx.db.patch(args.userId, { topics });
@@ -147,17 +159,14 @@ export const updateTopics = mutation({
 
 export const createStyleProfile = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     profileText: v.string(),
     selectedStyles: v.array(v.string()),
     userWritingSample: v.optional(v.string()),
     sampleWritingWeight: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user) {
-      throw new Error("User not found.");
-    }
+    await requireProfileOwnedByAccount(ctx, args.userId);
 
     const existing = await ctx.db
       .query("styleProfiles")
@@ -181,10 +190,12 @@ export const createStyleProfile = mutation({
 
 export const updateStyleProfile = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id("profiles"),
     profileText: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireProfileOwnedByAccount(ctx, args.userId);
+
     const profile = await ctx.db
       .query("styleProfiles")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))

@@ -27,7 +27,7 @@ function formatCreatedAt(timestamp: number): string {
 
 export function HomeContent() {
   const { push } = useAppNavigation();
-  const profiles = useQuery(api.users.listUsers);
+  const profiles = useQuery(api.profiles.listProfiles);
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export function HomeContent() {
   }, []);
 
   function handleSelectProfile(
-    userId: Id<"users">,
+    userId: Id<"profiles">,
     hasStyleProfile: boolean,
   ): void {
     setStoredUserId(userId);
