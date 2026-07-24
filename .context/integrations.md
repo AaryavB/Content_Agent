@@ -92,6 +92,15 @@ Run in this order — repointing Netlify before prod has the schema breaks the l
    the same run:
    ```
    npm run generate:keys
+   ```
+   Then paste both values into the **Convex dashboard** → switch the deployment
+   selector to *Production* → Settings → Environment Variables → Add.
+
+   Prefer the dashboard over `npx convex env set`, especially on Windows: the private
+   key is ~1,700 characters and the JWKS is JSON full of double quotes, and PowerShell
+   mangles both when passing them to a native command. The web form has no quoting
+   rules. On macOS/Linux the CLI is fine:
+   ```
    npx convex env set JWT_PRIVATE_KEY --prod -- "<value>"
    npx convex env set JWKS --prod -- '<value>'
    npx convex env list --prod           # expect all four
@@ -103,6 +112,8 @@ Run in this order — repointing Netlify before prod has the schema breaks the l
    ```
    npx convex deploy          # Windows: npm run convex:deploy
    ```
+   On Windows, set `$env:NODE_OPTIONS = "--use-system-ca"` first if you hit TLS
+   errors — see [Convex deploy on Windows](#convex-deploy-on-windows) below.
 
 3. **Repoint Netlify** → Site settings → Environment variables:
    `NEXT_PUBLIC_CONVEX_URL` = `https://marvelous-fly-60.convex.cloud`
