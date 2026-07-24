@@ -13,7 +13,14 @@ import { Input } from "@/components/ui/Input";
 import { PageShell } from "@/components/ui/PageShell";
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Something went wrong.";
+  const message = error instanceof Error ? error.message : "Something went wrong.";
+  if (message.includes("InvalidAccountId")) {
+    return "No account found with this email. Sign up first or check for typos.";
+  }
+  if (message.includes("InvalidSecret") || message.includes("Invalid credentials")) {
+    return "Incorrect password. Try again.";
+  }
+  return message;
 }
 
 export function LoginForm() {
@@ -32,7 +39,7 @@ export function LoginForm() {
     try {
       await signIn("password", {
         flow: "signIn",
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
       router.replace("/");
